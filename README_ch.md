@@ -95,7 +95,9 @@ PPOCRLabel --lang ch --kie True  # 启动 【KIE 模式】，用于打【检测+
 如果您对PPOCRLabel文件有所更改（例如指定新的内置模型），通过Python脚本运行会更加方便的看到更改的结果。如果仍然需要通过whl包启动，则需要先卸载当前环境中的whl包，然后参考下节重新编译whl包。
 
 ```bash
-cd ./PPOCRLabel  # 切换到PPOCRLabel目录
+# 安装环境依赖
+pip install -r requirements.txt
+
 python PPOCRLabel.py --lang ch
 ```
 
@@ -104,7 +106,6 @@ python PPOCRLabel.py --lang ch
 编译与安装新的whl包，其中0.0.0为版本号，可在 `setup.py` 中指定新版本。
 
 ```bash
-cd ./PPOCRLabel
 python3 setup.py bdist_wheel
 pip3 install dist/PPOCRLabel-0.0.0-py2.py3-none-any.whl -i https://mirror.baidu.com/pypi/simple
 ```

@@ -95,8 +95,8 @@ PPOCRLabel --kie True # [KIE mode] for [detection + recognition + keyword extrac
 If you modify the PPOCRLabel file (for example, specifying a new built-in model), it will be more convenient to see the results by running the Python script. If you still want to start with the whl package, you need to uninstall the whl package in the current environment and then recompile it according to the next section.
 
 ```bash
-cd ./PPOCRLabel  # Switch to the PPOCRLabel directory
-
+# Install dependencies
+pip install -r requirements.txt
 # Select label mode and run
 python PPOCRLabel.py  # [Normal mode] for [detection + recognition] labeling
 python PPOCRLabel.py --kie True # [KIE mode] for [detection + recognition + keyword extraction] labeling
@@ -105,7 +105,6 @@ python PPOCRLabel.py --kie True # [KIE mode] for [detection + recognition + keyw
 #### 1.2.3 Build and Install the Whl Package Locally
 Compile and install a new whl package, where 0.0.0 is the version number, you can specify the new version in 'setup.py'.
 ```bash
-cd ./PPOCRLabel
 python3 setup.py bdist_wheel
 pip3 install dist/PPOCRLabel-0.0.0-py2.py3-none-any.whl
 ```
