@@ -42,11 +42,8 @@ PPOCRLabelv2 is a semi-automatic graphic annotation tool suitable for OCR field,
 ```bash
 pip3 install --upgrade pip
 
-# If you have cuda9 or cuda10 installed on your machine, please run the following command to install
-python3 -m pip install paddlepaddle-gpu -i https://mirror.baidu.com/pypi/simple
-
 # If you only have cpu on your machine, please run the following command to install
-python3 -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
+python3 -m pip install paddlepaddle
 ```
 
 For more software version requirements, please refer to the instructions in [Installation Document](https://www.paddlepaddle.org.cn/install/quick) for operation.
@@ -103,11 +100,10 @@ python PPOCRLabel.py --kie True # [KIE mode] for [detection + recognition + keyw
 ```
 
 #### 1.2.3 Build and Install the Whl Package Locally
-Compile and install a new whl package, where 0.0.0 is the version number, you can specify the new version in 'setup.py'.
+
 ```bash
 cd ./PPOCRLabel
-python3 setup.py bdist_wheel
-pip3 install dist/PPOCRLabel-0.0.0-py2.py3-none-any.whl
+pip3 install -e .
 ```
 
 
