@@ -40,7 +40,7 @@ class StringBundle:
             create_key == StringBundle.__create_key
         ), "StringBundle must be created using StringBundle.getBundle"
         self.idToMessage = {}
-        paths = self.__createLookupFallbackList(localeStr)
+        paths = self.__create_lookup_fallback_list(localeStr)
         for path in paths:
             self.__loadBundle(path)
 
@@ -63,19 +63,18 @@ class StringBundle:
         assert stringId in self.idToMessage, "Missing string id : " + stringId
         return self.idToMessage[stringId]
 
-    def __createLookupFallbackList(self, localeStr):
-        resultPaths = []
-        basePath = "\strings" if os.name == "nt" else "/strings"
-        resultPaths.append(basePath)
-        if localeStr is not None:
+    def __create_lookup_fallback_list(self, locale_str):
+        result_paths = []
+        base_path = ":/strings"
+        result_paths.append(base_path)
+        if locale_str is not None:
             # Don't follow standard BCP47. Simple fallback
-            tags = re.split("[^a-zA-Z]", localeStr)
+            tags = re.split('[^a-zA-Z]', locale_str)
             for tag in tags:
-                lastPath = resultPaths[-1]
-                resultPaths.append(lastPath + "-" + tag)
-            resultPaths[-1] = __dirpath__ + resultPaths[-1] + ".properties"
+                last_path = result_paths[-1]
+                result_paths.append(last_path + '-' + tag)
 
-        return resultPaths
+        return result_paths
 
     def __loadBundle(self, path):
         PROP_SEPERATOR = "="
