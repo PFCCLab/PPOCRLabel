@@ -69,10 +69,10 @@ class StringBundle:
         result_paths.append(base_path)
         if locale_str is not None:
             # Don't follow standard BCP47. Simple fallback
-            tags = re.split('[^a-zA-Z]', locale_str)
+            tags = re.split("[^a-zA-Z]", locale_str)
             for tag in tags:
                 last_path = result_paths[-1]
-                result_paths.append(last_path + '-' + tag)
+                result_paths.append(last_path + "-" + tag)
 
         return result_paths
 
