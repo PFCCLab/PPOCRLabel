@@ -103,6 +103,21 @@ cd ./PPOCRLabel
 pip install -e .
 ```
 
+#### 1.2.4 Pyinstaller打包并运行
+```bash
+cd ./PPOCRLabel
+# 安装pyinstaller
+pip install pyinstaller
+
+# 重新生成资源
+pyrcc5 -o libs/resources.py resources.qrc
+
+# 打包可执行程序
+pyinstaller -c PPOCRLabel.py --collect-all paddleocr --collect-all pyclipper --collect-all imghdr --collect-all skimage --collect-all imgaug --collect-all scipy.io --collect-all lmdb --collect-all paddle --hidden-import=pyqt5  -p ./libs -p ./ -p ./data -p ./resources -F
+
+# 运行dist中的可执行程序，以windows为例
+PPOCRLabel.exe --lang ch
+```
 
 ## 2. 使用
 
