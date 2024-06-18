@@ -62,14 +62,9 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
 )
 
-__dir__ = os.path.dirname(os.path.abspath(__file__))
-
-sys.path.append(__dir__)
-sys.path.append(os.path.abspath(os.path.join(__dir__, "../..")))
-sys.path.append(os.path.abspath(os.path.join(__dir__, "../PaddleOCR")))
-sys.path.append("..")
 
 from paddleocr import PaddleOCR, PPStructure
+from libs.resources import *
 from libs.constants import *
 from libs.utils import *
 from libs.labelColor import label_colormap
@@ -3421,7 +3416,7 @@ def get_main_app(argv=[]):
     app.setWindowIcon(newIcon("app"))
     # Tzutalin 201705+: Accept extra arguments to change predefined class file
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("--lang", type=str, default="en", nargs="?")
+    arg_parser.add_argument("--lang", type=str, default="ch", nargs="?")
     arg_parser.add_argument("--gpu", type=str2bool, default=True, nargs="?")
     arg_parser.add_argument("--kie", type=str2bool, default=False, nargs="?")
     arg_parser.add_argument(
@@ -3450,12 +3445,4 @@ def main():
 
 
 if __name__ == "__main__":
-    resource_file = "./libs/resources.py"
-    if not os.path.exists(resource_file):
-        output = os.system("pyrcc5 -o libs/resources.py resources.qrc")
-        assert output == 0, (
-            "operate the cmd have some problems ,please check  whether there is a in the lib "
-            "directory resources.py "
-        )
-
     sys.exit(main())

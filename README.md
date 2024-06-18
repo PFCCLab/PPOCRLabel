@@ -106,6 +106,21 @@ cd ./PPOCRLabel
 pip3 install -e .
 ```
 
+#### 1.2.4 Pyinstaller build
+```bash
+cd ./PPOCRLabel
+# install pyinstaller
+pip install pyinstaller
+
+# Regenerate Resources
+pyrcc5 -o libs/resources.py resources.qrc
+
+# Packaging executable programs
+pyinstaller -c PPOCRLabel.py --collect-all paddleocr --collect-all pyclipper --collect-all imghdr --collect-all skimage --collect-all imgaug --collect-all scipy.io --collect-all lmdb --collect-all paddle --hidden-import=pyqt5  -p ./libs -p ./ -p ./data -p ./resources -F
+
+# Run the executable program in dist, windows as an example
+PPOCRLabel.exe --lang ch
+```
 
 ## 2. Usage
 
