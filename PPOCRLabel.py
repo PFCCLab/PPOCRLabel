@@ -1248,9 +1248,10 @@ class MainWindow(QMainWindow):
 
     def rotateImg(self, filename, k, _value):
         self.actions.rotateRight.setEnabled(_value)
-        pix = cv2.imread(filename)
+        pix = cv2.imdecode(np.fromfile(filename, dtype=np.uint8), cv2.IMREAD_COLOR)
         pix = np.rot90(pix, k)
-        cv2.imwrite(filename, pix)
+        ext = os.path.splitext(filename)[1]
+        cv2.imencode(ext, pix)[1].tofile(filename)
         self.canvas.update()
         self.loadFile(filename)
 
@@ -2387,7 +2388,9 @@ class MainWindow(QMainWindow):
 
         if mode == "Manual":
             self.result_dic_locked = []
-            img = cv2.imread(self.filePath)
+            img = cv2.imdecode(
+                np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR
+            )
             width, height = self.image.width(), self.image.height()
             for shape in self.canvas.lockedShapes:
                 box = [[int(p[0] * width), int(p[1] * height)] for p in shape["ratio"]]
@@ -2823,7 +2826,7 @@ class MainWindow(QMainWindow):
         import time
 
         start = time.time()
-        img = cv2.imread(self.filePath)
+        img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
         res = self.table_ocr(img, return_ocr_result_in_table=True)
 
         TableRec_excel_dir = self.lastOpenDir + "/tableRec_excel_output/"
@@ -2954,7 +2957,7 @@ class MainWindow(QMainWindow):
         """
         re-recognise text in a cell
         """
-        img = cv2.imread(self.filePath)
+        img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
         for shape in self.canvas.selectedShapes:
             box = [[int(p.x()), int(p.y())] for p in shape.points]
 
