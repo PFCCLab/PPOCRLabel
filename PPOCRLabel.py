@@ -1250,7 +1250,8 @@ class MainWindow(QMainWindow):
         self.actions.rotateRight.setEnabled(_value)
         pix = cv2.imdecode(np.fromfile(filename, dtype=np.uint8), cv2.IMREAD_COLOR)
         pix = np.rot90(pix, k)
-        cv2.imwrite(filename, pix)
+        ext = os.path.splitext(filename)[1]
+        cv2.imencode(ext, pix)[1].tofile(filename)
         self.canvas.update()
         self.loadFile(filename)
 
