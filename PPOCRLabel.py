@@ -1268,7 +1268,7 @@ class MainWindow(QMainWindow):
             )
 
     def rotateImgAction(self, k=1, _value=False):
-        filename = self.mImgList[self.currIndex]
+        filename = self.filePath
 
         if os.path.exists(filename):
             if self.itemsToShapesbox:
