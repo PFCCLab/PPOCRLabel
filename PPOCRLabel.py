@@ -3118,7 +3118,8 @@ class MainWindow(QMainWindow):
             self.actions.AutoRec.setEnabled(True)
 
     def modelChoose(self):
-        print(self.comboBox.currentText())
+        current_text = self.comboBox.currentText()
+        print(current_text)
         lg_idx = {
             "Chinese & English": "ch",
             "English": "en",
@@ -3127,23 +3128,30 @@ class MainWindow(QMainWindow):
             "Korean": "korean",
             "Japanese": "japan",
         }
-        del self.ocr
-        self.ocr = PaddleOCR(
-            use_pdserving=False,
-            use_angle_cls=True,
-            det=True,
-            cls=True,
-            use_gpu=False,
-            lang=lg_idx[self.comboBox.currentText()],
-        )
-        del self.table_ocr
-        self.table_ocr = PPStructure(
-            use_pdserving=False,
-            use_gpu=False,
-            lang=lg_idx[self.comboBox.currentText()],
-            layout=False,
-            show_log=False,
-        )
+        if current_text in lg_idx:
+            choose_lang = lg_idx[current_text]
+            if hasattr(self, "ocr"):
+                del self.ocr
+            self.ocr = PaddleOCR(
+                use_pdserving=False,
+                use_angle_cls=True,
+                det=True,
+                cls=True,
+                use_gpu=False,
+                lang=choose_lang,
+            )
+            if choose_lang in ["ch", "en"]:
+                if hasattr(self, "table_ocr"):
+                    del self.table_ocr
+                self.table_ocr = PPStructure(
+                    use_pdserving=False,
+                    use_gpu=False,
+                    lang=choose_lang,
+                    layout=False,
+                    show_log=False,
+                )
+        else:
+            print("Invalid language selection")
         self.dialog.close()
 
     def cancel(self):
