@@ -8,7 +8,7 @@ version = "2.1.5"
 dependencies = [
   "pyqt5",
   "paddleocr",
-  "xlrd==2.0.1",
+  "openpyxl",
   "tqdm",
 ]
 requires-python = ">= 3.9"

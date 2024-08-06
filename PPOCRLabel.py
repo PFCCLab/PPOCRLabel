@@ -17,13 +17,13 @@ import argparse
 import ast
 import codecs
 import json
-import os.path
+import os
 import platform
 import subprocess
 import sys
 import traceback
 
-import xlrd
+import openpyxl
 from functools import partial
 
 from PyQt5.QtCore import (
@@ -62,6 +62,8 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
 )
 
+__dir__ = os.path.dirname(__file__)
+sys.path.append(os.path.join(__dir__, ""))
 
 from paddleocr import PaddleOCR, PPStructure
 from libs.resources import *
@@ -2909,9 +2911,9 @@ class MainWindow(QMainWindow):
                 # save HTML result to excel
                 try:
                     to_excel(region["res"]["html"], excel_path)
-                except:
+                except Exception as e:
                     print(
-                        "Can not save excel file, maybe Permission denied (.xlsx is being occupied)"
+                        f"Can not save excel file, maybe Permission denied (.xlsx is being occupied). Error: {e}"
                     )
                 break
 
@@ -2929,10 +2931,10 @@ class MainWindow(QMainWindow):
         if platform.system() == "Windows":
             try:
                 import win32com.client
-            except:
+            except Exception as e:
                 print(
                     "CANNOT OPEN .xlsx. It could be one of the following reasons: "
-                    "Only support Windows | No python win32com"
+                    f"Only support Windows | No python win32com. Error: {e}"
                 )
 
             try:
@@ -2943,10 +2945,10 @@ class MainWindow(QMainWindow):
                 # subprocess.Popen([excelEx, excel_path])
 
                 # os.startfile(excel_path)
-            except:
+            except Exception as e:
                 print(
                     "CANNOT OPEN .xlsx. It could be the following reasons: "
-                    ".xlsx is not existed"
+                    f".xlsx is not existed. Error: {e}"
                 )
         else:
             os.system("open " + os.path.normpath(excel_path))
@@ -3052,16 +3054,19 @@ class MainWindow(QMainWindow):
             if not os.path.exists(csv_path):
                 continue
 
-            excel = xlrd.open_workbook(csv_path)
-            sheet0 = excel.sheet_by_index(0)  # only sheet 0
-            merged_cells = (
-                sheet0.merged_cells
-            )  # (0,1,1,3) start row, end row, start col, end col
+            excel = openpyxl.load_workbook(csv_path, data_only=True)
+            sheet0 = excel.worksheets[0]  # only sheet 0
+            merged_cells = sheet0.merged_cells.ranges  # list of merged cell ranges
 
-            html_list = [["td"] * sheet0.ncols for i in range(sheet0.nrows)]
+            html_list = [["td"] * sheet0.max_column for i in range(sheet0.max_row)]
 
             for merged in merged_cells:
-                html_list = expand_list(merged, html_list)
+                # Convert merged cell range to start row, end row, start col, end col
+                sr = merged.min_row - 1
+                er = merged.max_row - 1
+                sc = merged.min_col - 1
+                ec = merged.max_col - 1
+                html_list = expand_list((sr, er, sc, ec), html_list)
 
             token_list = convert_token(html_list)
 
