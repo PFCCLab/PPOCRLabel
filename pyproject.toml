@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools >= 61.0"]
+requires = ["setuptools >= 61.0", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "PPOCRLabel"
-version = "2.1.7"
+dynamic = ["version"]
 dependencies = [
   "pyqt5",
   "paddleocr",
@@ -42,3 +42,5 @@ PPOCRLabel = "PPOCRLabel.PPOCRLabel:main"
 [tool.setuptools]
 package-dir = {PPOCRLabel = ""}
 package-data = {PPOCRLabel = ["libs/*", "resources/strings/*", "resources/icons/*"]}
+
+[tool.setuptools_scm]
