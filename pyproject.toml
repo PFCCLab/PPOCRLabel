@@ -4,12 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PPOCRLabel"
-version = "2.1.6"
+version = "2.1.7"
 dependencies = [
   "pyqt5",
   "paddleocr",
   "openpyxl",
   "tqdm",
+  "premailer",
+  "pandas",
 ]
 requires-python = ">= 3.9"
 authors = [
