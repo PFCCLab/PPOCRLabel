@@ -2,6 +2,13 @@
 
 # PPOCRLabelv2
 
+[![PyPI - Version](https://img.shields.io/pypi/v/PPOCRLabel)](https://pypi.org/project/PPOCRLabel/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/PPOCRLabel)](https://pypi.org/project/PPOCRLabel/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dd/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
+[![PyPI - Downloads](https://img.shields.io/pypi/dw/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
+[![Downloads](https://static.pepy.tech/badge/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
+
 PPOCRLabel是一款适用于OCR领域的半自动化图形标注工具，内置PP-OCR模型对数据自动标注和重新识别。使用Python3和PyQT5编写，支持矩形框标注、表格标注、不规则文本标注、关键信息标注模式，导出格式可直接用于PaddleOCR检测和识别模型的训练。
 
 |                      常规标注                       |                    表格标注                    |
