@@ -2,6 +2,13 @@ English | [简体中文](README_ch.md)
 
 # PPOCRLabelv2
 
+[![PyPI - Version](https://img.shields.io/pypi/v/PPOCRLabel)](https://pypi.org/project/PPOCRLabel/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/PPOCRLabel)](https://pypi.org/project/PPOCRLabel/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dd/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
+[![PyPI - Downloads](https://img.shields.io/pypi/dw/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
+[![Downloads](https://static.pepy.tech/badge/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
+
 PPOCRLabelv2 is a semi-automatic graphic annotation tool suitable for OCR field, with built-in PP-OCR model to automatically detect and re-recognize data. It is written in Python3 and PyQT5, supporting rectangular box, table, irregular text and key information annotation modes. Annotations can be directly used for the training of PP-OCR detection and recognition models.
 
 |               regular text annotation               |                table annotation                |
