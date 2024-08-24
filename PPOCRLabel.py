@@ -22,9 +22,11 @@ import platform
 import subprocess
 import sys
 import traceback
+from functools import partial
 
 import openpyxl
-from functools import partial
+import cv2
+import numpy as np
 
 from PyQt5.QtCore import (
     QSize,
@@ -36,7 +38,7 @@ from PyQt5.QtCore import (
     QPointF,
     QProcess,
 )
-from PyQt5.QtGui import QImage, QCursor, QPixmap, QImageReader
+from PyQt5.QtGui import QImage, QCursor, QPixmap, QImageReader, QColor, QIcon
 from PyQt5.QtWidgets import (
     QMainWindow,
     QListWidget,
@@ -60,15 +62,46 @@ from PyQt5.QtWidgets import (
     QDialog,
     QAbstractItemView,
     QSizePolicy,
+    QMenu,
+    QAction,
+    QPushButton,
 )
 
 __dir__ = os.path.dirname(__file__)
 sys.path.append(os.path.join(__dir__, ""))
 
 from paddleocr import PaddleOCR, PPStructure
-from libs.resources import *
-from libs.constants import *
-from libs.utils import *
+from libs.resources import newIcon
+from libs.constants import (
+    SETTING_ADVANCE_MODE,
+    SETTING_DRAW_SQUARE,
+    SETTING_FILENAME,
+    SETTING_FILL_COLOR,
+    SETTING_LAST_OPEN_DIR,
+    SETTING_LINE_COLOR,
+    SETTING_PAINT_INDEX,
+    SETTING_PAINT_LABEL,
+    SETTING_RECENT_FILES,
+    SETTING_SAVE_DIR,
+    SETTING_WIN_POSE,
+    SETTING_WIN_SIZE,
+    SETTING_WIN_STATE,
+)
+from libs.utils import (
+    addActions,
+    boxPad,
+    convert_token,
+    expand_list,
+    fmtShortcut,
+    get_rotate_crop_image,
+    have_qstring,
+    keysInfo,
+    natural_sort,
+    newAction,
+    rebuild_html_from_ppstructure_label,
+    stepsInfo,
+    struct,
+)
 from libs.labelColor import label_colormap
 from libs.settings import Settings
 from libs.shape import Shape, DEFAULT_LINE_COLOR, DEFAULT_FILL_COLOR, DEFAULT_LOCK_COLOR
@@ -118,7 +151,9 @@ class MainWindow(QMainWindow):
         self.stringBundle = StringBundle.getBundle(
             localeStr="zh-CN" if lang == "ch" else "en"
         )  # 'en'
-        getStr = lambda strId: self.stringBundle.getString(strId)
+
+        def getStr(strId):
+            return self.stringBundle.getString(strId)
 
         # KIE setting
         self.kie_mode = kie_mode
@@ -1259,7 +1294,11 @@ class MainWindow(QMainWindow):
 
     def rotateImgWarn(self):
         if self.lang == "ch":
-            self.msgBox.warning(self, "提示", "\n 该图片已经有标注框,旋转操作会打乱标注,建议清除标注框后旋转。")
+            self.msgBox.warning(
+                self,
+                "提示",
+                "\n 该图片已经有标注框,旋转操作会打乱标注,建议清除标注框后旋转。",
+            )
         else:
             self.msgBox.warning(
                 self,
@@ -1369,7 +1408,7 @@ class MainWindow(QMainWindow):
         if text:
             try:
                 text_list = eval(text)
-            except:
+            except Exception:
                 msg_box = QMessageBox(
                     QMessageBox.Warning, "Warning", "Please enter the correct format"
                 )
@@ -1398,7 +1437,7 @@ class MainWindow(QMainWindow):
 
     def updateBoxlist(self):
         self.canvas.selectedShapes_hShape = []
-        if self.canvas.hShape != None:
+        if self.canvas.hShape is not None:
             self.canvas.selectedShapes_hShape = self.canvas.selectedShapes + [
                 self.canvas.hShape
             ]
@@ -1667,7 +1706,7 @@ class MainWindow(QMainWindow):
             #                         self.lineColor.getRgb(), self.fillColor.getRgb())
             # print('Image:{0} -> Annotation:{1}'.format(self.filePath, annotationFilePath))
             return True
-        except:
+        except Exception:
             self.errorMessage("Error saving label data", "Error saving label data")
             return False
 
@@ -1724,7 +1763,7 @@ class MainWindow(QMainWindow):
     def labelItemChanged(self, item):
         # avoid accidentally triggering the itemChanged siganl with unhashable item
         # Unknown trigger condition
-        if type(item) == HashableQListWidgetItem:
+        if isinstance(item, HashableQListWidgetItem):
             shape = self.itemsToShapes[item]
             label = item.text()
             if label != shape.label:
@@ -2163,7 +2202,7 @@ class MainWindow(QMainWindow):
             settings.save()
             try:
                 self.saveLabelFile()
-            except:
+            except Exception:
                 pass
 
     def loadRecent(self, filename):
@@ -2197,7 +2236,7 @@ class MainWindow(QMainWindow):
             defaultOpenDirPath = (
                 os.path.dirname(self.filePath) if self.filePath else "."
             )
-        if silent != True:
+        if not silent:
             targetDirPath = ustr(
                 QFileDialog.getExistingDirectory(
                     self,
@@ -3292,7 +3331,7 @@ class MainWindow(QMainWindow):
             self.autoSaveNum = 1  # Real auto_Save
             try:
                 self.saveLabelFile()
-            except:
+            except Exception:
                 pass
             print("The program will automatically save once after confirming an image")
         else:
@@ -3416,7 +3455,7 @@ def read(filename, default=None):
     try:
         with open(filename, "rb") as f:
             return f.read()
-    except:
+    except Exception:
         return default
 
 
