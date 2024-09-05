@@ -61,7 +61,6 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QDialog,
     QAbstractItemView,
-    QSizePolicy,
     QMenu,
     QAction,
     QPushButton,
@@ -71,7 +70,6 @@ __dir__ = os.path.dirname(__file__)
 sys.path.append(os.path.join(__dir__, ""))
 
 from paddleocr import PaddleOCR, PPStructure
-from libs.resources import newIcon
 from libs.constants import (
     SETTING_ADVANCE_MODE,
     SETTING_DRAW_SQUARE,
@@ -98,6 +96,7 @@ from libs.utils import (
     keysInfo,
     natural_sort,
     newAction,
+    newIcon,
     rebuild_html_from_ppstructure_label,
     stepsInfo,
     struct,
