@@ -70,6 +70,7 @@ __dir__ = os.path.dirname(__file__)
 sys.path.append(os.path.join(__dir__, ""))
 
 from paddleocr import PaddleOCR, PPStructure
+import libs.resources
 from libs.constants import (
     SETTING_ADVANCE_MODE,
     SETTING_DRAW_SQUARE,
