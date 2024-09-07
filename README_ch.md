@@ -185,7 +185,7 @@ PPOCRLabel.exe --lang ch
 |------------------|---------------------------------|
 | Ctrl + shift + R | 对当前图片的所有标记重新识别                  |
 | W                | 新建矩形框                           |
-| Q                | 新建多点框                           |
+| Q  或 Home       | 新建多点框                           |
 | X                | 框逆时针旋转                          |
 | C                | 框顺时针旋转                          |
 | Ctrl + E         | 编辑所选框标签                         |
@@ -193,8 +193,8 @@ PPOCRLabel.exe --lang ch
 | Ctrl + R         | 重新识别所选标记                        |
 | Ctrl + C         | 【复制并粘贴】选中的标记框                     |
 | Ctrl + 鼠标左键    | 多选标记框                           |
-| Backspace         | 删除所选框                           |
-| Ctrl + V         | 确认本张图片标记                        |
+| Backspace 或 delete    | 删除所选框                           |
+| Ctrl + V 或 End        | 确认本张图片标记                        |
 | Ctrl + Shift + d | 删除本张图片                          |
 | D                | 下一张图片                           |
 | A                | 上一张图片                           |
