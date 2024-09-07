@@ -2261,9 +2261,7 @@ class MainWindow(QMainWindow):
 
         else:
             if self.lang == "ch":
-                self.msgBox.warning(
-                    self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!"
-                )
+                self.msgBox.warning(self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!")
             else:
                 self.msgBox.warning(
                     self,
