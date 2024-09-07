@@ -144,6 +144,7 @@ class MainWindow(QMainWindow):
         self.settings.load()
         settings = self.settings
         self.lang = lang
+        self.gpu = gpu
 
         # Load string bundle for i18n
         if lang not in ["ch", "en"]:
@@ -2260,7 +2261,9 @@ class MainWindow(QMainWindow):
 
         else:
             if self.lang == "ch":
-                self.msgBox.warning(self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!")
+                self.msgBox.warning(
+                    self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!"
+                )
             else:
                 self.msgBox.warning(
                     self,
@@ -3181,7 +3184,7 @@ class MainWindow(QMainWindow):
                 use_angle_cls=True,
                 det=True,
                 cls=True,
-                use_gpu=False,
+                use_gpu=self.gpu,
                 lang=choose_lang,
             )
             if choose_lang in ["ch", "en"]:
@@ -3189,7 +3192,7 @@ class MainWindow(QMainWindow):
                     del self.table_ocr
                 self.table_ocr = PPStructure(
                     use_pdserving=False,
-                    use_gpu=False,
+                    use_gpu=self.gpu,
                     lang=choose_lang,
                     layout=False,
                     show_log=False,
