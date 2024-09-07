@@ -144,6 +144,7 @@ class MainWindow(QMainWindow):
         self.settings.load()
         settings = self.settings
         self.lang = lang
+        self.gpu=gpu
 
         # Load string bundle for i18n
         if lang not in ["ch", "en"]:
@@ -3181,7 +3182,7 @@ class MainWindow(QMainWindow):
                 use_angle_cls=True,
                 det=True,
                 cls=True,
-                use_gpu=False,
+                use_gpu=self.gpu,
                 lang=choose_lang,
             )
             if choose_lang in ["ch", "en"]:
@@ -3189,7 +3190,7 @@ class MainWindow(QMainWindow):
                     del self.table_ocr
                 self.table_ocr = PPStructure(
                     use_pdserving=False,
-                    use_gpu=False,
+                    use_gpu=self.gpu,
                     lang=choose_lang,
                     layout=False,
                     show_log=False,
