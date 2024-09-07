@@ -205,7 +205,7 @@ labeling in the Excel file, the recommended steps are:
 |--------------------------|--------------------------------------------------|
 | Ctrl + Shift + R         | Re-recognize all the labels of the current image |
 | W                        | Create a rect box                                |
-| Q                        | Create a multi-points box                         |
+| Q  or  Home              | Create a multi-points box                         |
 | X                        | Rotate the box anti-clockwise                    |
 | C                        | Rotate the box clockwise                         |
 | Ctrl + E                 | Edit label of the selected box                   |
@@ -213,8 +213,8 @@ labeling in the Excel file, the recommended steps are:
 | Ctrl + R                 | Re-recognize the selected box                    |
 | Ctrl + C                 | Copy and paste the selected box                  |
 | Ctrl + Left Mouse Button | Multi select the label box                       |
-| Backspace                 | Delete the selected box                          |
-| Ctrl + V                 | Check image                                      |
+| Backspace or Delete      | Delete the selected box                          |
+| Ctrl + V  or End         | Check image                                      |
 | Ctrl + Shift + d         | Delete image                                     |
 | D                        | Next image                                       |
 | A                        | Previous image                                   |

@@ -503,7 +503,7 @@ class MainWindow(QMainWindow):
         save = action(
             getStr("save"),
             self.saveFile,
-            "Ctrl+V",
+            ["Ctrl+V", "end"],
             "verify",
             getStr("saveDetail"),
             enabled=False,
@@ -571,7 +571,7 @@ class MainWindow(QMainWindow):
         delete = action(
             getStr("delBox"),
             self.deleteSelectedShape,
-            "backspace",
+            ["backspace", "delete"],
             "delete",
             getStr("delBoxDetail"),
             enabled=False,
@@ -722,7 +722,7 @@ class MainWindow(QMainWindow):
         createpoly = action(
             getStr("creatPolygon"),
             self.createPolygon,
-            "q",
+            ["q", "home"],
             "new",
             getStr("creatPolygon"),
             enabled=False,
