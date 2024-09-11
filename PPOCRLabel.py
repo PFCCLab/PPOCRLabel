@@ -1028,6 +1028,14 @@ class MainWindow(QMainWindow):
         self.displayIndexOption.setChecked(settings.get(SETTING_PAINT_INDEX, False))
         self.autoSaveOption.triggered.connect(self.autoSaveFunc)
 
+        self.autoReRecognitionOption = QAction(getStr("autoReRecognition"), self)
+        self.autoReRecognitionOption.setCheckable(True)
+        self.autoReRecognitionOption.setChecked(
+            settings.get(SETTING_PAINT_LABEL, False)
+        )
+        self.displayIndexOption.setChecked(settings.get(SETTING_PAINT_INDEX, False))
+        self.autoReRecognitionOption.triggered.connect(self.autoSaveFunc)
+
         addActions(
             self.menus.file,
             (
@@ -1038,6 +1046,7 @@ class MainWindow(QMainWindow):
                 saveRec,
                 exportJSON,
                 self.autoSaveOption,
+                self.autoReRecognitionOption,
                 None,
                 resetAll,
                 deleteImg,
@@ -1863,6 +1872,8 @@ class MainWindow(QMainWindow):
                 self.actions.editMode.setEnabled(True)
             self.setDirty()
 
+            if self.autoReRecognitionOption.isChecked():
+                self.reRecognition()
         else:
             # self.canvas.undoLastLine()
             self.canvas.resetAllLines()
