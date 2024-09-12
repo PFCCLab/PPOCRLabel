@@ -1993,7 +1993,7 @@ class MainWindow(QMainWindow):
         for item, shape in self.itemsToShapes.items():
             self.canvas.setShapeVisible(shape, value)
 
-    def loadFile(self, filePath=None):
+    def loadFile(self, filePath=None, isAdjustScale=True):
         """Load the specified file, or the last opened file if None."""
         if self.dirty:
             self.mayContinue()
@@ -2065,7 +2065,8 @@ class MainWindow(QMainWindow):
                 self.actions.save.setEnabled(True)
                 self.setDirty()
             self.canvas.setEnabled(True)
-            self.adjustScale(initial=True)
+            if isAdjustScale:
+                self.adjustScale(initial=True)
             self.paintCanvas()
             self.addRecentFile(self.filePath)
             self.toggleActions(True)
@@ -2839,7 +2840,7 @@ class MainWindow(QMainWindow):
             if (len(self.result_dic) > 0 and rec_flag > 0) or self.canvas.lockedShapes:
                 self.canvas.isInTheSameImage = True
                 self.saveFile(mode="Auto")
-                self.loadFile(self.filePath)
+                self.loadFile(self.filePath, isAdjustScale=False)
                 self.canvas.isInTheSameImage = False
                 self.setDirty()
             elif len(self.result_dic) == len(self.canvas.shapes) and rec_flag == 0:
