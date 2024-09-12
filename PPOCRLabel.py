@@ -1036,6 +1036,16 @@ class MainWindow(QMainWindow):
         self.displayIndexOption.setChecked(settings.get(SETTING_PAINT_INDEX, False))
         self.autoReRecognitionOption.triggered.connect(self.autoSaveFunc)
 
+        self.autoSaveUnsavedChangesOption = QAction(
+            getStr("autoSaveUnsavedChanges"), self
+        )
+        self.autoSaveUnsavedChangesOption.setCheckable(True)
+        self.autoSaveUnsavedChangesOption.setChecked(
+            settings.get(SETTING_PAINT_LABEL, False)
+        )
+        self.displayIndexOption.setChecked(settings.get(SETTING_PAINT_INDEX, False))
+        self.autoSaveUnsavedChangesOption.triggered.connect(self.autoSaveFunc)
+
         addActions(
             self.menus.file,
             (
@@ -1047,6 +1057,7 @@ class MainWindow(QMainWindow):
                 exportJSON,
                 self.autoSaveOption,
                 self.autoReRecognitionOption,
+                self.autoSaveUnsavedChangesOption,
                 None,
                 resetAll,
                 deleteImg,
@@ -2545,6 +2556,12 @@ class MainWindow(QMainWindow):
         if not self.dirty:
             return True
         else:
+            if self.autoSaveUnsavedChangesOption.isChecked():
+                self.canvas.isInTheSameImage = True
+                self.saveFile()
+                self.canvas.isInTheSameImage = False
+                return True
+
             discardChanges = self.discardChangesDialog()
             if discardChanges == QMessageBox.No:
                 return True
