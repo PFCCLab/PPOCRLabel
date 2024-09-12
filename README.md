@@ -18,7 +18,7 @@ PPOCRLabelv2 is a semi-automatic graphic annotation tool suitable for OCR field,
 | <img src="./data/gif/multi-point.gif" width="80%"/> |  <img src="./data/gif/kie.gif" width="100%"/>  |
 
 ### Recent Update
-
+- 2022.09: Added `Re-recognition` and `Auto Save Unsaved changes` features. For usage details, please refer to the "11. Additional Feature Description" in the "2.1 Operational Steps" section below.
 - 2022.05: Add table annotations, follow `2.2 Table Annotations` for more information （by [whjdark](https://github.com/peterh0323); [Evezerest](https://github.com/Evezerest))
 - 2022.02:（by [PeterH0323](https://github.com/peterh0323) ）
   - Add KIE Mode by using `--kie`, for [detection + identification + keyword extraction] labeling.
@@ -156,6 +156,10 @@ PPOCRLabel.exe --lang ch
 9. Click "Delete Image", and the image will be deleted to the recycle bin.
 
 10. Labeling result: the user can export the label result manually through the menu "File - Export Label", while the program will also export automatically if "File - Auto export Label Mode" is selected. The manually checked label will be stored in *Label.txt* under the opened picture folder. Click "File"-"Export Recognition Results" in the menu bar, the recognition training data of such pictures will be saved in the *crop_img* folder, and the recognition label will be saved in *rec_gt.txt*<sup>[4]</sup>.
+
+11. Additional Feature Description
+    - `File` -> `Re-recognition`: After checking, the newly annotated box content will automatically trigger the `Re-recognition` function of the current annotation box, eliminating the need to click the Re-identify button. This is suitable for scenarios where you do not want to use Automatic Annotation but prefer manual annotation, such as license plate recognition. In a single image with only one license plate, using Automatic Annotation would require deleting many additional recognized text boxes, which is less efficient than directly re-annotating.
+    - `File` -> `Auto Save Unsaved changes`: By default, you need to press the `Check` button to complete the marking confirmation for the current box, which can be cumbersome. After checking, when switching to the next image (by pressing the shortcut key `D`), a prompt box asking to confirm whether to save unconfirmed markings will no longer appear. The current markings will be automatically saved and the next image will be switched, making it convenient for quick marking.
 
 ### 2.2 Table Annotation
 The table annotation is aimed at extracting the structure of the table in a picture and converting it to Excel format,
