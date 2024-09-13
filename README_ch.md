@@ -3,9 +3,6 @@
 # PPOCRLabelv2
 
 [![PyPI - Version](https://img.shields.io/pypi/v/PPOCRLabel)](https://pypi.org/project/PPOCRLabel/)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/PPOCRLabel)](https://pypi.org/project/PPOCRLabel/)
-[![PyPI - Downloads](https://img.shields.io/pypi/dd/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
-[![PyPI - Downloads](https://img.shields.io/pypi/dw/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
 [![Downloads](https://static.pepy.tech/badge/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
 
@@ -18,8 +15,9 @@ PPOCRLabel是一款适用于OCR领域的半自动化图形标注工具，内置P
 | <img src="./data/gif/multi-point.gif" width="80%"/> |  <img src="./data/gif/kie.gif" width="100%"/>  |
 
 #### 近期更新
-- 2022.09: 新增`自动重新识别`和`自动保存未提交变更`功能，使用方法详见下方`2.1 操作步骤`的`11. 补充功能说明`
-- 2022.05：**新增表格标注**，使用方法见下方`2.2 表格标注`（by [whjdark](https://github.com/peterh0323); [Evezerest](https://github.com/Evezerest))
+
+- 2024.09: 新增`自动重新识别`和`自动保存未提交变更`功能，使用方法详见下方`2.1 操作步骤`的`11. 补充功能说明`
+- 2022.05：**新增表格标注**，使用方法见下方`2.2 表格标注`（by [whjdark](https://github.com/peterh0323); [Evezerest](https://github.com/Evezerest)）
 - 2022.02：**新增关键信息标注**、优化标注体验（by [PeterH0323](https://github.com/peterh0323) ）
   - 新增：使用 `--kie` 进入 KIE 功能，用于打【检测+识别+关键字提取】的标签
   - 提升用户体验：新增文件与标记数目提示、优化交互、修复gpu使用等问题。
@@ -30,7 +28,7 @@ PPOCRLabel是一款适用于OCR领域的半自动化图形标注工具，内置P
 - 2021.8.11：
   - 新增功能：打开数据所在文件夹、右键图像旋转90度（注意：旋转前的图片上不能存在标记框，by [Wei-JL](https://github.com/Wei-JL)）
   - 新增快捷键说明（帮助-快捷键）、修复批处理下的方向快捷键移动功能（by [d2623587501](https://github.com/d2623587501)）
-- 2021.2.5：新增批处理与撤销功能（by [Evezerest](https://github.com/Evezerest))
+- 2021.2.5：新增批处理与撤销功能（by [Evezerest](https://github.com/Evezerest)）
   - **批处理功能**：按住Ctrl键选择标记框后可批量移动、复制、删除、重新识别。
   - **撤销功能**：在绘制四点标注框过程中或对框进行编辑操作后，按下Ctrl+Z可撤销上一部操作。
   - 修复图像旋转和尺寸问题、优化编辑标记框过程（by [ninetailskim](https://github.com/ninetailskim)、 [edencfc](https://github.com/edencfc)）
@@ -47,6 +45,7 @@ PPOCRLabel是一款适用于OCR领域的半自动化图形标注工具，内置P
 ## 1. 安装与运行
 
 ### 1.1 安装PaddlePaddle
+
 ```bash
 pip3 install --upgrade pip
 
@@ -130,6 +129,7 @@ PPOCRLabel.exe --lang ch
 ## 2. 使用
 
 ### 2.1 操作步骤
+
 > 如果您只需要标注文字信息和位置，推荐按照以下步骤展开：
 
 1. 安装与运行：使用上述命令安装与运行程序。
@@ -147,6 +147,7 @@ PPOCRLabel.exe --lang ch
     - `文件` -> `自动保存未提交变更` : 默认是按`确认`按钮完成当前框的标记确认，有点繁琐，勾选后，切换下一张图（按快捷键`D`）的时候，不再弹出提示框确认是否保存未确认的标记，自动保存当前标记并切换下一张图，方便快速标记
 
 ### 2.2 表格标注（[视频演示](https://www.bilibili.com/video/BV1wR4y1v7JE/?share_source=copy_web&vd_source=cf1f9d24648d49636e3d109c9f9a377d&t=1998)）
+
 表格标注针对表格的结构化提取，将图片中的表格转换为Excel格式，因此标注时需要配合外部软件打开Excel同时完成。在PPOCRLabel软件中完成表格中的文字信息标注（文字与位置）、在Excel文件中完成表格结构信息标注，推荐的步骤为：
 1. 表格识别：打开表格图片后，点击软件右上角 `表格识别` 按钮，软件调用PP-Structure中的表格识别模型，自动为表格打标签，同时弹出Excel
 
@@ -179,8 +180,6 @@ PPOCRLabel.exe --lang ch
 |  rec_gt.txt   | 识别标签。可直接用于PPOCR识别模型训练。需用户手动点击菜单栏“文件” - "导出识别结果"后产生。 |
 |   crop_img    |   识别数据。按照检测框切割后的图片。与rec_gt.txt同时产生。   |
 
-
-
 ## 3. 说明
 
 ### 3.1 快捷键
@@ -205,7 +204,6 @@ PPOCRLabel.exe --lang ch
 | Ctrl++           | 缩小                              |
 | Ctrl--           | 放大                              |
 | ↑→↓←             | 移动标记框                           |
-
 
 ### 3.2 内置模型
 
@@ -276,8 +274,6 @@ python gen_ocr_train_val_test.py --trainValTestRatio 6:2:2 --datasetRootPath ../
     ```
     pip install opencv-contrib-python-headless==4.2.0.32
     ```
-
-
 
 ### 4. 参考资料
 
