@@ -212,9 +212,9 @@ def expand_list(merged, html_list):
     # Add the colspan and rowspan attributes only if necessary
     html_list[sr][sc] = ""
     if ec - sc > 0:  # Only add colspan if the column span is more than 1
-        html_list[sr][sc] += ' colspan={}'.format(ec - sc + 1)
+        html_list[sr][sc] += " colspan={}".format(ec - sc + 1)
     if er - sr > 0:  # Only add rowspan if the row span is more than 1
-        html_list[sr][sc] += ' rowspan={}'.format(er - sr + 1)
+        html_list[sr][sc] += " rowspan={}".format(er - sr + 1)
     return html_list
 
 
@@ -259,7 +259,7 @@ def rebuild_html_from_ppstructure_label(label_info):
             cell = "".join(cell)
             html_code.insert(i + 1, cell)
     html_code = "".join(html_code)
-    html_code = re.sub(r'(colspan|rowspan)="(\d+)"', r'\1=\2', html_code)
+    html_code = re.sub(r'(colspan|rowspan)="(\d+)"', r"\1=\2", html_code)
     html_code = "<html><body><table>{}</table></body></html>".format(html_code)
     return html_code
 
