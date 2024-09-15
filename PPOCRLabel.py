@@ -2148,9 +2148,12 @@ class MainWindow(QMainWindow):
             self.canvas.verified = False
 
     def validFilestate(self, filePath):
-        if filePath not in self.fileStatedict.keys():
-            return None
-        elif self.fileStatedict[filePath] == 1:
+        if filePath in self.fileStatedict.keys() and self.fileStatedict[filePath] == 1:
+            return True
+        elif (
+            self.getImglabelidx(filePath) in self.fileStatedict.keys()
+            and self.fileStatedict[self.getImglabelidx(filePath)] == 1
+        ):
             return True
         else:
             return False
@@ -2284,7 +2287,9 @@ class MainWindow(QMainWindow):
 
         else:
             if self.lang == "ch":
-                self.msgBox.warning(self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!")
+                self.msgBox.warning(
+                    self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!"
+                )
             else:
                 self.msgBox.warning(
                     self,
@@ -2473,7 +2478,7 @@ class MainWindow(QMainWindow):
                 item = self.fileListWidget.item(currIndex)
                 item.setIcon(newIcon("done"))
 
-                self.fileStatedict[self.filePath] = 1
+                self.fileStatedict[self.getImglabelidx(self.filePath)] = 1
                 if len(self.fileStatedict) % self.autoSaveNum == 0:
                     self.saveFilestate()
                     self.savePPlabel(mode="Auto")
@@ -2753,6 +2758,8 @@ class MainWindow(QMainWindow):
         else:
             spliter = "/"
         filepathsplit = filePath.split(spliter)[-2:]
+        if len(filepathsplit) == 1:
+            return filePath
         return filepathsplit[0] + "/" + filepathsplit[1]
 
     def autoRecognition(self):
@@ -3241,7 +3248,7 @@ class MainWindow(QMainWindow):
                 states = f.readlines()
                 for each in states:
                     file, state = each.split("\t")
-                    self.fileStatedict[file] = 1
+                    self.fileStatedict[self.getImglabelidx(file)] = 1
                 self.actions.saveLabel.setEnabled(True)
                 self.actions.saveRec.setEnabled(True)
                 self.actions.exportJSON.setEnabled(True)
