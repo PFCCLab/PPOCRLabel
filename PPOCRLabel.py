@@ -2249,7 +2249,7 @@ class MainWindow(QMainWindow):
                 relativePath = os.path.join(folderPath, file)
                 path = ustr(os.path.abspath(relativePath))
                 images.append(path)
-        natural_sort(images, key=lambda x: x.lower())
+        # natural_sort(images, key=lambda x: x.lower())
         return images
 
     def openDirDialog(self, _value=False, dirpath=None, silent=False):
@@ -3308,8 +3308,9 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Information", "Check the image first")
             return
 
-        rec_gt_dir = os.path.dirname(self.PPlabelpath) + "/rec_gt.txt"
-        crop_img_dir = os.path.dirname(self.PPlabelpath) + "/crop_img/"
+        base_dir = os.path.dirname(self.PPlabelpath)
+        rec_gt_dir = base_dir + "/rec_gt.txt"
+        crop_img_dir = base_dir + "/crop_img/"
         ques_img = []
         if not os.path.exists(crop_img_dir):
             os.mkdir(crop_img_dir)
@@ -3318,7 +3319,8 @@ class MainWindow(QMainWindow):
             for key in self.fileStatedict:
                 idx = self.getImglabelidx(key)
                 try:
-                    img = cv2.imdecode(np.fromfile(key, dtype=np.uint8), -1)
+                    img_path = os.path.dirname(base_dir) + "/" + key
+                    img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), -1)
                     for i, label in enumerate(self.PPlabel[idx]):
                         if label["difficult"]:
                             continue
