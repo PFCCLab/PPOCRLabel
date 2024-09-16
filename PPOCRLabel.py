@@ -129,6 +129,7 @@ class MainWindow(QMainWindow):
         self,
         lang="ch",
         gpu=False,
+        img_list_natural_sort=True,
         kie_mode=False,
         default_filename=None,
         default_predefined_class_file=None,
@@ -145,6 +146,7 @@ class MainWindow(QMainWindow):
         settings = self.settings
         self.lang = lang
         self.gpu = gpu
+        self.img_list_natural_sort = img_list_natural_sort
 
         # Load string bundle for i18n
         if lang not in ["ch", "en"]:
@@ -2148,9 +2150,12 @@ class MainWindow(QMainWindow):
             self.canvas.verified = False
 
     def validFilestate(self, filePath):
-        if filePath not in self.fileStatedict.keys():
-            return None
-        elif self.fileStatedict[filePath] == 1:
+        if filePath in self.fileStatedict.keys() and self.fileStatedict[filePath] == 1:
+            return True
+        elif (
+            self.getImglabelidx(filePath) in self.fileStatedict.keys()
+            and self.fileStatedict[self.getImglabelidx(filePath)] == 1
+        ):
             return True
         else:
             return False
@@ -2246,7 +2251,10 @@ class MainWindow(QMainWindow):
                 relativePath = os.path.join(folderPath, file)
                 path = ustr(os.path.abspath(relativePath))
                 images.append(path)
-        natural_sort(images, key=lambda x: x.lower())
+        if self.img_list_natural_sort:
+            natural_sort(images, key=lambda x: x.lower())
+        else:
+            images.sort()
         return images
 
     def openDirDialog(self, _value=False, dirpath=None, silent=False):
@@ -2473,7 +2481,7 @@ class MainWindow(QMainWindow):
                 item = self.fileListWidget.item(currIndex)
                 item.setIcon(newIcon("done"))
 
-                self.fileStatedict[self.filePath] = 1
+                self.fileStatedict[self.getImglabelidx(self.filePath)] = 1
                 if len(self.fileStatedict) % self.autoSaveNum == 0:
                     self.saveFilestate()
                     self.savePPlabel(mode="Auto")
@@ -2753,6 +2761,8 @@ class MainWindow(QMainWindow):
         else:
             spliter = "/"
         filepathsplit = filePath.split(spliter)[-2:]
+        if len(filepathsplit) == 1:
+            return filePath
         return filepathsplit[0] + "/" + filepathsplit[1]
 
     def autoRecognition(self):
@@ -3241,7 +3251,7 @@ class MainWindow(QMainWindow):
                 states = f.readlines()
                 for each in states:
                     file, state = each.split("\t")
-                    self.fileStatedict[file] = 1
+                    self.fileStatedict[self.getImglabelidx(file)] = 1
                 self.actions.saveLabel.setEnabled(True)
                 self.actions.saveRec.setEnabled(True)
                 self.actions.exportJSON.setEnabled(True)
@@ -3301,8 +3311,9 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Information", "Check the image first")
             return
 
-        rec_gt_dir = os.path.dirname(self.PPlabelpath) + "/rec_gt.txt"
-        crop_img_dir = os.path.dirname(self.PPlabelpath) + "/crop_img/"
+        base_dir = os.path.dirname(self.PPlabelpath)
+        rec_gt_dir = base_dir + "/rec_gt.txt"
+        crop_img_dir = base_dir + "/crop_img/"
         ques_img = []
         if not os.path.exists(crop_img_dir):
             os.mkdir(crop_img_dir)
@@ -3311,7 +3322,8 @@ class MainWindow(QMainWindow):
             for key in self.fileStatedict:
                 idx = self.getImglabelidx(key)
                 try:
-                    img = cv2.imdecode(np.fromfile(key, dtype=np.uint8), -1)
+                    img_path = os.path.dirname(base_dir) + "/" + key
+                    img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), -1)
                     for i, label in enumerate(self.PPlabel[idx]):
                         if label["difficult"]:
                             continue
@@ -3505,6 +3517,9 @@ def get_main_app(argv=[]):
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("--lang", type=str, default="ch", nargs="?")
     arg_parser.add_argument("--gpu", type=str2bool, default=True, nargs="?")
+    arg_parser.add_argument(
+        "--img_list_natural_sort", type=str2bool, default=True, nargs="?"
+    )
     arg_parser.add_argument("--kie", type=str2bool, default=False, nargs="?")
     arg_parser.add_argument(
         "--predefined_classes_file",
@@ -3518,6 +3533,7 @@ def get_main_app(argv=[]):
     win = MainWindow(
         lang=args.lang,
         gpu=args.gpu,
+        img_list_natural_sort=args.img_list_natural_sort,
         kie_mode=args.kie,
         default_predefined_class_file=args.predefined_classes_file,
     )
