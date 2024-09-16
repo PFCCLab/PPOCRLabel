@@ -16,7 +16,9 @@ PPOCRLabelv2 is a semi-automatic graphic annotation tool suitable for OCR field,
 
 ### Recent Update
 
-- 2024.09: Added `Re-recognition` and `Auto Save Unsaved changes` features. For usage details, please refer to the "11. Additional Feature Description" in the "2.1 Operational Steps" section below.
+- 2024.09: 
+  - Added `Re-recognition` and `Auto Save Unsaved changes` features. For usage details, please refer to the "11. Additional Feature Description" in the "2.1 Operational Steps" section below.
+  - Added the parameter '-- imd_list_natural_stort', which defaults to natural sorting for the left image list. After configuring this parameter, character sorting will be used to easily locate images based on character order
 - 2022.05: Add table annotations, follow `2.2 Table Annotations` for more information (by [whjdark](https://github.com/peterh0323); [Evezerest](https://github.com/Evezerest))
 - 2022.02: (by [PeterH0323](https://github.com/peterh0323))
   - Add KIE Mode by using `--kie`, for [detection + identification + keyword extraction] labeling.

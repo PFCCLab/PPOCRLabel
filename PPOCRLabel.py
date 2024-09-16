@@ -129,6 +129,7 @@ class MainWindow(QMainWindow):
         self,
         lang="ch",
         gpu=False,
+        img_list_natural_sort=True,
         kie_mode=False,
         default_filename=None,
         default_predefined_class_file=None,
@@ -145,6 +146,7 @@ class MainWindow(QMainWindow):
         settings = self.settings
         self.lang = lang
         self.gpu = gpu
+        self.img_list_natural_sort = img_list_natural_sort
 
         # Load string bundle for i18n
         if lang not in ["ch", "en"]:
@@ -2249,7 +2251,10 @@ class MainWindow(QMainWindow):
                 relativePath = os.path.join(folderPath, file)
                 path = ustr(os.path.abspath(relativePath))
                 images.append(path)
-        # natural_sort(images, key=lambda x: x.lower())
+        if self.img_list_natural_sort:
+            natural_sort(images, key=lambda x: x.lower())
+        else:
+            images.sort()
         return images
 
     def openDirDialog(self, _value=False, dirpath=None, silent=False):
@@ -3514,6 +3519,9 @@ def get_main_app(argv=[]):
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("--lang", type=str, default="ch", nargs="?")
     arg_parser.add_argument("--gpu", type=str2bool, default=True, nargs="?")
+    arg_parser.add_argument(
+        "--img_list_natural_sort", type=str2bool, default=True, nargs="?"
+    )
     arg_parser.add_argument("--kie", type=str2bool, default=False, nargs="?")
     arg_parser.add_argument(
         "--predefined_classes_file",
@@ -3527,6 +3535,7 @@ def get_main_app(argv=[]):
     win = MainWindow(
         lang=args.lang,
         gpu=args.gpu,
+        img_list_natural_sort=args.img_list_natural_sort,
         kie_mode=args.kie,
         default_predefined_class_file=args.predefined_classes_file,
     )
