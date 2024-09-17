@@ -134,6 +134,10 @@ class MainWindow(QMainWindow):
         default_filename=None,
         default_predefined_class_file=None,
         default_save_dir=None,
+        det_model_dir=None,
+        rec_model_dir=None,
+        rec_char_dict_path=None,
+        cls_model_dir=None,
     ):
         super(MainWindow, self).__init__()
         self.setWindowTitle(__appname__)
@@ -165,15 +169,27 @@ class MainWindow(QMainWindow):
         self.key_dialog_tip = getStr("keyDialogTip")
 
         self.defaultSaveDir = default_save_dir
-        self.ocr = PaddleOCR(
-            use_pdserving=False,
-            use_angle_cls=True,
-            det=True,
-            cls=True,
-            use_gpu=gpu,
-            lang=lang,
-            show_log=False,
-        )
+
+        params = {
+            "use_pdserving": False,
+            "use_angle_cls": True,
+            "det": True,
+            "cls": True,
+            "use_gpu": gpu,
+            "lang": lang,
+            "show_log": False,
+        }
+
+        if det_model_dir is not None:
+            params["det_model_dir"] = det_model_dir
+        if rec_model_dir is not None:
+            params["rec_model_dir"] = rec_model_dir
+        if rec_char_dict_path is not None:
+            params["rec_char_dict_path"] = rec_char_dict_path
+        if cls_model_dir is not None:
+            params["cls_model_dir"] = cls_model_dir
+
+        self.ocr = PaddleOCR(**params)
         self.table_ocr = PPStructure(
             use_pdserving=False, use_gpu=gpu, lang=lang, layout=False, show_log=False
         )
@@ -3528,6 +3544,11 @@ def get_main_app(argv=[]):
         ),
         nargs="?",
     )
+    arg_parser.add_argument("--det_model_dir", type=str, default=None, nargs="?")
+    arg_parser.add_argument("--rec_model_dir", type=str, default=None, nargs="?")
+    arg_parser.add_argument("--rec_char_dict_path", type=str, default=None, nargs="?")
+    arg_parser.add_argument("--cls_model_dir", type=str, default=None, nargs="?")
+
     args = arg_parser.parse_args(argv[1:])
 
     win = MainWindow(
@@ -3536,6 +3557,10 @@ def get_main_app(argv=[]):
         img_list_natural_sort=args.img_list_natural_sort,
         kie_mode=args.kie,
         default_predefined_class_file=args.predefined_classes_file,
+        det_model_dir=args.det_model_dir,
+        rec_model_dir=args.rec_model_dir,
+        rec_char_dict_path=args.rec_char_dict_path,
+        cls_model_dir=args.cls_model_dir,
     )
     win.show()
     return app, win

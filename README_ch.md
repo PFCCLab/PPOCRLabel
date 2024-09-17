@@ -19,6 +19,11 @@ PPOCRLabel是一款适用于OCR领域的半自动化图形标注工具，内置P
 - 2024.09:
   - 新增`自动重新识别`和`自动保存未提交变更`功能，使用方法详见下方`2.1 操作步骤`的`11. 补充功能说明`。
   - 新增`--img_list_natural_sort`参数，默认左侧图片列表使用自然排序，配置该参数后，将使用字符排序，方便根据字符顺序定位图片。
+  - 新增4个自定义模型的参数：
+    - `det_model_dir` ：检测模型目录路径
+    - `rec_model_dir` ：识别模型目录路径
+    - `rec_char_dict_path` ：识别模型字典文件路径
+    - `cls_model_dir` ：分类模型目录路径
 - 2022.05：**新增表格标注**，使用方法见下方`2.2 表格标注`（by [whjdark](https://github.com/peterh0323); [Evezerest](https://github.com/Evezerest)）
 - 2022.02：**新增关键信息标注**、优化标注体验（by [PeterH0323](https://github.com/peterh0323) ）
   - 新增：使用 `--kie` 进入 KIE 功能，用于打【检测+识别+关键字提取】的标签
