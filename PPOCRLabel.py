@@ -2019,6 +2019,7 @@ class MainWindow(QMainWindow):
 
     def loadFile(self, filePath=None, isAdjustScale=True):
         """Load the specified file, or the last opened file if None."""
+        self.canvas.shape_move_index = None
         if self.dirty:
             self.mayContinue()
         self.resetState()
