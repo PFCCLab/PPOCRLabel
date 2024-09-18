@@ -40,6 +40,9 @@ class Canvas(QWidget):
 
     epsilon = 5.0
 
+    # 切换选中标记框4个点单独上下左右移动， 默认为None，则四个点同时移动
+    shape_move_index = None
+
     def __init__(self, *args, **kwargs):
         super(Canvas, self).__init__(*args, **kwargs)
         # Initialise local state.
@@ -754,6 +757,39 @@ class Canvas(QWidget):
             self.moveOnePixel("Up")
         elif key == Qt.Key_Down and self.selectedShapes:
             self.moveOnePixel("Down")
+        elif key == Qt.Key_Z and self.selectedShapes:
+            self.shape_move_index = 0
+            select_shape = self.selectedShapes[0]
+            select_shape.highlightVertex(
+                self.shape_move_index, select_shape.MOVE_VERTEX
+            )
+            self.update()
+        elif key == Qt.Key_X and self.selectedShapes:
+            self.shape_move_index = 1
+            select_shape = self.selectedShapes[0]
+            select_shape.highlightVertex(
+                self.shape_move_index, select_shape.MOVE_VERTEX
+            )
+            self.update()
+        elif key == Qt.Key_C and self.selectedShapes:
+            self.shape_move_index = 2
+            select_shape = self.selectedShapes[0]
+            select_shape.highlightVertex(
+                self.shape_move_index, select_shape.MOVE_VERTEX
+            )
+            self.update()
+        elif key == Qt.Key_V and self.selectedShapes:
+            self.shape_move_index = 3
+            select_shape = self.selectedShapes[0]
+            select_shape.highlightVertex(
+                self.shape_move_index, select_shape.MOVE_VERTEX
+            )
+            self.update()
+        elif key == Qt.Key_B and self.selectedShapes:
+            self.shape_move_index = None
+            select_shape = self.selectedShapes[0]
+            select_shape.highlightClear()
+            self.update()
         elif key == Qt.Key_X and self.selectedShapes:
             for i in range(len(self.selectedShapes)):
                 self.selectedShape = self.selectedShapes[i]
@@ -788,33 +824,30 @@ class Canvas(QWidget):
             self.selectedShape = self.selectedShapes[i]
             if direction == "Left" and not self.moveOutOfBound(QPointF(-1.0, 0)):
                 # print("move Left one pixel")
-                self.selectedShape.points[0] += QPointF(-1.0, 0)
-                self.selectedShape.points[1] += QPointF(-1.0, 0)
-                self.selectedShape.points[2] += QPointF(-1.0, 0)
-                self.selectedShape.points[3] += QPointF(-1.0, 0)
+                self.move_points(QPointF(-1.0, 0))
             elif direction == "Right" and not self.moveOutOfBound(QPointF(1.0, 0)):
                 # print("move Right one pixel")
-                self.selectedShape.points[0] += QPointF(1.0, 0)
-                self.selectedShape.points[1] += QPointF(1.0, 0)
-                self.selectedShape.points[2] += QPointF(1.0, 0)
-                self.selectedShape.points[3] += QPointF(1.0, 0)
+                self.move_points(QPointF(1.0, 0))
             elif direction == "Up" and not self.moveOutOfBound(QPointF(0, -1.0)):
                 # print("move Up one pixel")
-                self.selectedShape.points[0] += QPointF(0, -1.0)
-                self.selectedShape.points[1] += QPointF(0, -1.0)
-                self.selectedShape.points[2] += QPointF(0, -1.0)
-                self.selectedShape.points[3] += QPointF(0, -1.0)
+                self.move_points(QPointF(0, -1.0))
             elif direction == "Down" and not self.moveOutOfBound(QPointF(0, 1.0)):
                 # print("move Down one pixel")
-                self.selectedShape.points[0] += QPointF(0, 1.0)
-                self.selectedShape.points[1] += QPointF(0, 1.0)
-                self.selectedShape.points[2] += QPointF(0, 1.0)
-                self.selectedShape.points[3] += QPointF(0, 1.0)
+                self.move_points(QPointF(0, 1.0))
         shapesBackup = []
         shapesBackup = copy.deepcopy(self.shapes)
         self.shapesBackups.append(shapesBackup)
         self.shapeMoved.emit()
         self.repaint()
+
+    def move_points(self, p: QPointF):
+        if self.shape_move_index is None:
+            self.selectedShape.points[0] += p
+            self.selectedShape.points[1] += p
+            self.selectedShape.points[2] += p
+            self.selectedShape.points[3] += p
+        else:
+            self.selectedShape.points[self.shape_move_index] += p
 
     def moveOutOfBound(self, step):
         points = [p1 + p2 for p1, p2 in zip(self.selectedShape.points, [step] * 4)]

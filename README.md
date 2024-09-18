@@ -24,6 +24,8 @@ PPOCRLabelv2 is a semi-automatic graphic annotation tool suitable for OCR field,
     - `rec_model_dir`: Path to the recognition model directory
     - `rec_char_dict_path`: Path to the recognition model dictionary file
     - `cls_model_dir`: Path to the classification model directory
+  - Added the `--bbox_auto_zoom_center` parameter, which can be enabled when there is only one bounding box in the image, automatically centering and zooming in on the bounding box.
+  - Added 5 shortcut keys `z`, `x`, `c`, `v`, `b` for controlling the 4 vertices of the bounding box. For usage details, see the '11. Additional Functionality Description' in "2.1 Operating Procedures" below.
 - 2022.05: Add table annotations, follow `2.2 Table Annotations` for more information (by [whjdark](https://github.com/peterh0323); [Evezerest](https://github.com/Evezerest))
 - 2022.02: (by [PeterH0323](https://github.com/peterh0323))
   - Add KIE Mode by using `--kie`, for [detection + identification + keyword extraction] labeling.
@@ -166,6 +168,12 @@ PPOCRLabel.exe --lang ch
 11. Additional Feature Description
     - `File` -> `Re-recognition`: After checking, the newly annotated box content will automatically trigger the `Re-recognition` function of the current annotation box, eliminating the need to click the Re-identify button. This is suitable for scenarios where you do not want to use Automatic Annotation but prefer manual annotation, such as license plate recognition. In a single image with only one license plate, using Automatic Annotation would require deleting many additional recognized text boxes, which is less efficient than directly re-annotating.
     - `File` -> `Auto Save Unsaved changes`: By default, you need to press the `Check` button to complete the marking confirmation for the current box, which can be cumbersome. After checking, when switching to the next image (by pressing the shortcut key `D`), a prompt box asking to confirm whether to save unconfirmed markings will no longer appear. The current markings will be automatically saved and the next image will be switched, making it convenient for quick marking.
+    - After selecting the bounding box, there are 5 shortcut keys available to individually control the movement of the four vertices of the bounding box, suitable for scenarios that require precise control over the positions of the bounding box vertices:
+      - `z`: After pressing, the up, down, left, and right arrow keys will move the 1st vertex individually.
+      - `x`: After pressing, the up, down, left, and right arrow keys will move the 2nd vertex individually.
+      - `c`: After pressing, the up, down, left, and right arrow keys will move the 3rd vertex individually.
+      - `v`: After pressing, the up, down, left, and right arrow keys will move the 4th vertex individually.
+      - `b`: After pressing, the up, down, left, and right arrow keys will revert to the default action of moving the entire bounding box.
 
 ### 2.2 Table Annotation
 
@@ -217,8 +225,6 @@ labeling in the Excel file, the recommended steps are:
 | Ctrl + Shift + R         | Re-recognize all the labels of the current image |
 | W                        | Create a rect box                                |
 | Q  or  Home              | Create a multi-points box                         |
-| X                        | Rotate the box anti-clockwise                    |
-| C                        | Rotate the box clockwise                         |
 | Ctrl + E                 | Edit label of the selected box                   |
 | Ctrl + X                 | Change key class of the box when enable `--kie`  |
 | Ctrl + R                 | Re-recognize the selected box                    |
@@ -232,6 +238,7 @@ labeling in the Excel file, the recommended steps are:
 | Ctrl++                   | Zoom in                                          |
 | Ctrl--                   | Zoom out                                         |
 | ↑→↓←                     | Move selected box                                |
+| Z, X, C, V, B     | Move the four vertices of the selected bounding box individually|
 
 ### 3.2 Built-in Model
 
