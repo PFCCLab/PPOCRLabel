@@ -3552,7 +3552,6 @@ def get_main_app(argv=[]):
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("--lang", type=str, default="ch", nargs="?")
     arg_parser.add_argument("--gpu", type=str2bool, default=True, nargs="?")
-    # 左侧列表排序方法
     arg_parser.add_argument(
         "--img_list_natural_sort", type=str2bool, default=True, nargs="?"
     )
@@ -3564,13 +3563,10 @@ def get_main_app(argv=[]):
         ),
         nargs="?",
     )
-    # 外部模型参数
     arg_parser.add_argument("--det_model_dir", type=str, default=None, nargs="?")
     arg_parser.add_argument("--rec_model_dir", type=str, default=None, nargs="?")
     arg_parser.add_argument("--rec_char_dict_path", type=str, default=None, nargs="?")
     arg_parser.add_argument("--cls_model_dir", type=str, default=None, nargs="?")
-
-    # 只有一个标记框的时候自动放大居中
     arg_parser.add_argument(
         "--bbox_auto_zoom_center", type=str2bool, default=False, nargs="?"
     )

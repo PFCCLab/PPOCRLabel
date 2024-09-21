@@ -40,7 +40,6 @@ class Canvas(QWidget):
 
     epsilon = 5.0
 
-    # 切换选中标记框4个点单独上下左右移动， 默认为None，则四个点同时移动
     shape_move_index = None
 
     def __init__(self, *args, **kwargs):

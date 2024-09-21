@@ -363,8 +363,11 @@ def keysInfo(lang="en"):
 
 def polygon_bounding_box_center_and_area(points):
     """
-    计算多边形外接矩形的中心和面积
+    Calculate the center and area of the bounding rectangle of a polygon
     """
+    if len(points) < 3:
+        raise ValueError("At least three points are required to form a polygon")
+
     area = 0
     min_x = float("inf")
     max_x = float("-inf")
@@ -372,22 +375,19 @@ def polygon_bounding_box_center_and_area(points):
     max_y = float("-inf")
 
     n = len(points)
-    # 计算多边形的面积和质心坐标
     for i in range(n):
         x1 = points[i].x()
         y1 = points[i].y()
         x2 = points[(i + 1) % n].x()
         y2 = points[(i + 1) % n].y()
         area += x1 * y2 - x2 * y1
-        min_x = min(min_x, x1, x2)
-        max_x = max(max_x, x1, x2)
-        min_y = min(min_y, y1, y2)
-        max_y = max(max_y, y1, y2)
 
-    # 计算面积
+        min_x = min(min_x, x1)
+        max_x = max(max_x, x1)
+        min_y = min(min_y, y1)
+        max_y = max(max_y, y1)
+
     area = abs(area) / 2.0
-
-    # 计算外接矩形的中心
     center_x = (min_x + max_x) / 2
     center_y = (min_y + max_y) / 2
 
@@ -396,16 +396,8 @@ def polygon_bounding_box_center_and_area(points):
 
 def map_value(x, in_min, in_max, out_min, out_max):
     """
-    将数值x从[in_min, in_max]的范围映射到[out_min, out_max]的范围
-
-    参数:
-    x -- 要映射的数值
-    in_min -- 原始范围的最小值
-    in_max -- 原始范围的最大值
-    out_min -- 新范围的最小值
-    out_max -- 新范围的最大值
-
-    返回:
-    映射后的数值
+    Map the numerical value x from the range of [in_in, in_max] to the range of [out_in, out_max]
     """
+    if in_max == in_min:
+        raise ValueError("in_max and in_min cannot be equal")
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
