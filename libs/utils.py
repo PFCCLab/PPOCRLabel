@@ -322,6 +322,7 @@ def keysInfo(lang="en"):
             "Ctrl++\t\t\t缩小\n"
             "Ctrl--\t\t\t放大\n"
             "↑→↓←\t\t\t移动标记框\n"
+            "Z、X、C、V、B\t\t\t对选中的标记框，单独移动四个顶点\n"
             "———————————————————————\n"
             "注：Mac用户Command键替换上述Ctrl键"
         )
@@ -351,8 +352,52 @@ def keysInfo(lang="en"):
             "Ctrl++\t\t\tZoom in\n"
             "Ctrl--\t\t\tZoom out\n"
             "↑→↓←\t\t\tMove selected box"
+            "Z, X, C, V, B\t\tMove the four vertices of \n"
+            and "\t\t\tthe selected bounding box individually"
             "———————————————————————\n"
             "Notice:For Mac users, use the 'Command' key instead of the 'Ctrl' key"
         )
 
     return msg
+
+
+def polygon_bounding_box_center_and_area(points):
+    """
+    Calculate the center and area of the bounding rectangle of a polygon
+    """
+    if len(points) < 3:
+        raise ValueError("At least three points are required to form a polygon")
+
+    area = 0
+    min_x = float("inf")
+    max_x = float("-inf")
+    min_y = float("inf")
+    max_y = float("-inf")
+
+    n = len(points)
+    for i in range(n):
+        x1 = points[i].x()
+        y1 = points[i].y()
+        x2 = points[(i + 1) % n].x()
+        y2 = points[(i + 1) % n].y()
+        area += x1 * y2 - x2 * y1
+
+        min_x = min(min_x, x1)
+        max_x = max(max_x, x1)
+        min_y = min(min_y, y1)
+        max_y = max(max_y, y1)
+
+    area = abs(area) / 2.0
+    center_x = (min_x + max_x) / 2
+    center_y = (min_y + max_y) / 2
+
+    return center_x, center_y, area
+
+
+def map_value(x, in_min, in_max, out_min, out_max):
+    """
+    Map the numerical value x from the range of [in_in, in_max] to the range of [out_in, out_max]
+    """
+    if in_max == in_min:
+        raise ValueError("in_max and in_min cannot be equal")
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min

@@ -100,6 +100,8 @@ from libs.utils import (
     newIcon,
     rebuild_html_from_ppstructure_label,
     stepsInfo,
+    polygon_bounding_box_center_and_area,
+    map_value,
     struct,
 )
 from libs.labelColor import label_colormap
@@ -130,6 +132,7 @@ class MainWindow(QMainWindow):
         lang="ch",
         gpu=False,
         img_list_natural_sort=True,
+        bbox_auto_zoom_center=False,
         kie_mode=False,
         default_filename=None,
         default_predefined_class_file=None,
@@ -151,6 +154,7 @@ class MainWindow(QMainWindow):
         self.lang = lang
         self.gpu = gpu
         self.img_list_natural_sort = img_list_natural_sort
+        self.bbox_auto_zoom_center = bbox_auto_zoom_center
 
         # Load string bundle for i18n
         if lang not in ["ch", "en"]:
@@ -1943,7 +1947,7 @@ class MainWindow(QMainWindow):
             int(self.zoomWidget.value() + increment)
         )  # set zoom slider value
 
-    def zoomRequest(self, delta):
+    def zoomRequest(self, delta, pos: QPoint = None):
         # get the current scrollbar positions
         # calculate the percentages ~ coordinates
         h_bar = self.scrollBars[Qt.Horizontal]
@@ -1958,8 +1962,10 @@ class MainWindow(QMainWindow):
         # where 0 = move left
         #       1 = move right
         # up and down analogous
-        cursor = QCursor()
-        pos = cursor.pos()
+        if pos is None:
+            cursor = QCursor()
+            pos = cursor.pos()
+
         relative_pos = QWidget.mapFromGlobal(self, pos)
 
         cursor_x = relative_pos.x()
@@ -2013,6 +2019,7 @@ class MainWindow(QMainWindow):
 
     def loadFile(self, filePath=None, isAdjustScale=True):
         """Load the specified file, or the last opened file if None."""
+        self.canvas.shape_move_index = None
         if self.dirty:
             self.mayContinue()
         self.resetState()
@@ -2117,6 +2124,20 @@ class MainWindow(QMainWindow):
             )
 
             self.canvas.setFocus(True)
+
+            if self.bbox_auto_zoom_center:
+                if len(self.canvas.shapes) > 0:
+                    (
+                        center_x,
+                        center_y,
+                        shape_area,
+                    ) = polygon_bounding_box_center_and_area(
+                        self.canvas.shapes[0].points
+                    )
+                    if shape_area < 30000:
+                        zoom_value = 120 * map_value(shape_area, 100, 30000, 20, 0)
+                        self.zoomRequest(zoom_value, QPoint(center_x, center_y))
+                        # print(" =========> ", shape_area, " ==> ", zoom_value)
             return True
         return False
 
@@ -3548,6 +3569,9 @@ def get_main_app(argv=[]):
     arg_parser.add_argument("--rec_model_dir", type=str, default=None, nargs="?")
     arg_parser.add_argument("--rec_char_dict_path", type=str, default=None, nargs="?")
     arg_parser.add_argument("--cls_model_dir", type=str, default=None, nargs="?")
+    arg_parser.add_argument(
+        "--bbox_auto_zoom_center", type=str2bool, default=False, nargs="?"
+    )
 
     args = arg_parser.parse_args(argv[1:])
 
@@ -3561,6 +3585,7 @@ def get_main_app(argv=[]):
         rec_model_dir=args.rec_model_dir,
         rec_char_dict_path=args.rec_char_dict_path,
         cls_model_dir=args.cls_model_dir,
+        bbox_auto_zoom_center=args.bbox_auto_zoom_center,
     )
     win.show()
     return app, win
