@@ -2127,10 +2127,12 @@ class MainWindow(QMainWindow):
 
             if self.bbox_auto_zoom_center:
                 if len(self.canvas.shapes) > 0:
-                    center_x, center_y, shape_area = (
-                        polygon_bounding_box_center_and_area(
-                            self.canvas.shapes[0].points
-                        )
+                    (
+                        center_x,
+                        center_y,
+                        shape_area,
+                    ) = polygon_bounding_box_center_and_area(
+                        self.canvas.shapes[0].points
                     )
                     if shape_area < 30000:
                         zoom_value = 120 * map_value(shape_area, 100, 30000, 20, 0)
