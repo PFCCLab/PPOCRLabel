@@ -2329,7 +2329,9 @@ class MainWindow(QMainWindow):
 
         else:
             if self.lang == "ch":
-                self.msgBox.warning(self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!")
+                self.msgBox.warning(
+                    self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!"
+                )
             else:
                 self.msgBox.warning(
                     self,
@@ -2584,7 +2586,7 @@ class MainWindow(QMainWindow):
                 imgidx = self.getImglabelidx(self.filePath)
                 if imgidx in self.PPlabel.keys():
                     self.PPlabel.pop(imgidx)
-                
+
                 self.filePath = None
                 self.openNextImg()
                 self.importDirImages(self.lastOpenDir, isDelete=True)
