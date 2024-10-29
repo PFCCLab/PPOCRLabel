@@ -220,7 +220,6 @@ class Canvas(QWidget):
         # - Highlight shapes
         # - Highlight vertex
         # Update shape/vertex fill and tooltip value accordingly.
-        # self.setToolTip("Image")
         for shape in reversed([s for s in self.shapes if self.isVisible(s)]):
             # Look for a nearby vertex to highlight. If that fails,
             # check if we happen to be inside a shape.
@@ -231,8 +230,6 @@ class Canvas(QWidget):
                 self.hVertex, self.hShape = index, shape
                 shape.highlightVertex(index, shape.MOVE_VERTEX)
                 self.overrideCursor(CURSOR_POINT)
-                self.setToolTip("Click & drag to move point")
-                self.setStatusTip(self.toolTip())
                 self.update()
                 break
             else:
@@ -241,8 +238,6 @@ class Canvas(QWidget):
                         if self.selectedVertex():
                             self.hShape.highlightClear()
                         self.hVertex, self.hShape = None, shape
-                        self.setToolTip("Click & drag to move shape '%s'" % shape.label)
-                        self.setStatusTip(self.toolTip())
                         self.overrideCursor(CURSOR_GRAB)
                         self.update()
                         break

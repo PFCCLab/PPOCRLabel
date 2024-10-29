@@ -2584,6 +2584,8 @@ class MainWindow(QMainWindow):
                 imgidx = self.getImglabelidx(self.filePath)
                 if imgidx in self.PPlabel.keys():
                     self.PPlabel.pop(imgidx)
+
+                self.filePath = None
                 self.openNextImg()
                 self.importDirImages(self.lastOpenDir, isDelete=True)
 
