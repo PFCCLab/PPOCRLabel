@@ -16,6 +16,8 @@ PPOCRLabelv2 is a semi-automatic graphic annotation tool suitable for OCR field,
 
 ### Recent Update
 
+- 2024.11:
+  - Add `label_font_path` parameter to change the font of the label.
 - 2024.09:
   - Added `Re-recognition` and `Auto Save Unsaved changes` features. For usage details, please refer to the "11. Additional Feature Description" in the "2.1 Operational Steps" section below.
   - Added the parameter `--img_list_natural_sort`, which defaults to natural sorting for the left image list. After configuring this parameter, character sorting will be used to easily locate images based on character order.
