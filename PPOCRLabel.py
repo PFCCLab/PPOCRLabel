@@ -38,7 +38,15 @@ from PyQt5.QtCore import (
     QPointF,
     QProcess,
 )
-from PyQt5.QtGui import QImage, QCursor, QPixmap, QImageReader, QColor, QIcon
+from PyQt5.QtGui import (
+    QImage,
+    QCursor,
+    QPixmap,
+    QImageReader,
+    QColor,
+    QIcon,
+    QFontDatabase,
+)
 from PyQt5.QtWidgets import (
     QMainWindow,
     QListWidget,
@@ -141,6 +149,7 @@ class MainWindow(QMainWindow):
         rec_model_dir=None,
         rec_char_dict_path=None,
         cls_model_dir=None,
+        label_font_path=None,
     ):
         super(MainWindow, self).__init__()
         self.setWindowTitle(__appname__)
@@ -1190,6 +1199,15 @@ class MainWindow(QMainWindow):
         if self.filePath and os.path.isdir(self.filePath):
             self.openDirDialog(dirpath=self.filePath, silent=True)
 
+        # load font
+        self.label_font_family = None
+        if label_font_path is not None:
+            label_font_id = QFontDatabase.addApplicationFont(label_font_path)
+            if label_font_id >= 0:
+                self.label_font_family = QFontDatabase.applicationFontFamilies(
+                    label_font_id
+                )[0]
+
     def menu(self, title, actions=None):
         menu = self.menuBar().addMenu(title)
         if actions:
@@ -1640,7 +1658,12 @@ class MainWindow(QMainWindow):
         s = []
         shape_index = 0
         for label, points, line_color, key_cls, difficult in shapes:
-            shape = Shape(label=label, line_color=line_color, key_cls=key_cls)
+            shape = Shape(
+                label=label,
+                line_color=line_color,
+                key_cls=key_cls,
+                font_family=self.label_font_family,
+            )
             for x, y in points:
                 # Ensure the labels are within the bounds of the image. If not, fix them.
                 x, y, snapped = self.canvas.snapPointToCanvas(x, y)
@@ -3574,6 +3597,7 @@ def get_main_app(argv=[]):
     arg_parser.add_argument(
         "--bbox_auto_zoom_center", type=str2bool, default=False, nargs="?"
     )
+    arg_parser.add_argument("--label_font_path", type=str, default=None, nargs="?")
 
     args = arg_parser.parse_args(argv[1:])
 
@@ -3588,6 +3612,7 @@ def get_main_app(argv=[]):
         rec_char_dict_path=args.rec_char_dict_path,
         cls_model_dir=args.cls_model_dir,
         bbox_auto_zoom_center=args.bbox_auto_zoom_center,
+        label_font_path=args.label_font_path,
     )
     win.show()
     return app, win

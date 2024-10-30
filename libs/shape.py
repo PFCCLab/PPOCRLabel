@@ -55,6 +55,7 @@ class Shape(object):
         key_cls="None",
         paintLabel=False,
         paintIdx=False,
+        font_family=None,
     ):
         self.label = label
         self.idx = None  # bbox order, only for table annotation
@@ -78,7 +79,7 @@ class Shape(object):
         self.fontsize = 8
 
         self._closed = False
-
+        self.font_family = font_family
         if line_color is not None:
             # Override the class line_color attribute
             # with an object attribute. Currently this
@@ -173,6 +174,8 @@ class Shape(object):
                     min_y = min(min_y, point.y())
                 if min_x != sys.maxsize and min_y != sys.maxsize:
                     font = QFont()
+                    if self.font_family is not None:
+                        font.setFamily(self.font_family)
                     font.setPointSize(self.fontsize)
                     font.setBold(True)
                     painter.setFont(font)
