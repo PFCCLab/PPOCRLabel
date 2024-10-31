@@ -150,6 +150,7 @@ class MainWindow(QMainWindow):
         rec_char_dict_path=None,
         cls_model_dir=None,
         label_font_path=None,
+        selected_shape_color=(255, 255, 0),
     ):
         super(MainWindow, self).__init__()
         self.setWindowTitle(__appname__)
@@ -1199,7 +1200,7 @@ class MainWindow(QMainWindow):
         if self.filePath and os.path.isdir(self.filePath):
             self.openDirDialog(dirpath=self.filePath, silent=True)
 
-        # load font
+        # load label font
         self.label_font_family = None
         if label_font_path is not None:
             label_font_id = QFontDatabase.addApplicationFont(label_font_path)
@@ -1207,6 +1208,9 @@ class MainWindow(QMainWindow):
                 self.label_font_family = QFontDatabase.applicationFontFamilies(
                     label_font_id
                 )[0]
+
+        # selected shape color
+        self.selected_shape_color = selected_shape_color
 
     def menu(self, title, actions=None):
         menu = self.menuBar().addMenu(title)
@@ -1940,7 +1944,11 @@ class MainWindow(QMainWindow):
         shape.vertex_fill_color = QColor(r, g, b)
         shape.hvertex_fill_color = QColor(255, 255, 255)
         shape.fill_color = QColor(r, g, b, 32)
-        shape.select_line_color = QColor(255, 255, 255)
+        shape.select_line_color = QColor(
+            self.selected_shape_color[0],
+            self.selected_shape_color[1],
+            self.selected_shape_color[2],
+        )
         shape.select_fill_color = QColor(r, g, b, 32)
 
     def _get_rgb_by_label(self, label, kie_mode):
@@ -3567,6 +3575,14 @@ def str2bool(v):
     return v.lower() in ("true", "t", "1")
 
 
+def parse_rgb(value):
+    r, g, b = value.split(",")
+    r, g, b = int(r), int(g), int(b)
+    if not (0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
+        raise argparse.ArgumentTypeError("RGB values must be between 0 and 255.")
+    return (r, g, b)
+
+
 def get_main_app(argv=[]):
     """
     Standard boilerplate Qt application code.
@@ -3598,6 +3614,13 @@ def get_main_app(argv=[]):
         "--bbox_auto_zoom_center", type=str2bool, default=False, nargs="?"
     )
     arg_parser.add_argument("--label_font_path", type=str, default=None, nargs="?")
+    arg_parser.add_argument(
+        "--selected_shape_color",
+        type=parse_rgb,
+        default="255,255,0",
+        nargs="?",
+        help='An RGB value as "R,G,B".',
+    )
 
     args = arg_parser.parse_args(argv[1:])
 
@@ -3613,6 +3636,7 @@ def get_main_app(argv=[]):
         cls_model_dir=args.cls_model_dir,
         bbox_auto_zoom_center=args.bbox_auto_zoom_center,
         label_font_path=args.label_font_path,
+        selected_shape_color=args.selected_shape_color,
     )
     win.show()
     return app, win
