@@ -2430,11 +2430,15 @@ class MainWindow(QMainWindow):
         )
         self.statusBar().show()
 
+        imgListCurrIndex = None
+        if self.filePath != None:
+            imgListCurrIndex = self.mImgList.index(self.filePath)
+
         self.filePath = None
         self.fileListWidget.clear()
         self.mImgList = self.scanAllImages(dirpath)
         self.mImgList5 = self.mImgList[:5]
-        self.openNextImg()
+        self.openNextImg(imgListCurrIndex=imgListCurrIndex)
         doneicon = newIcon("done")
         closeicon = newIcon("close")
         for imgPath in self.mImgList:
@@ -2460,7 +2464,15 @@ class MainWindow(QMainWindow):
         self.actions.rotateLeft.setEnabled(True)
         self.actions.rotateRight.setEnabled(True)
 
-        self.fileListWidget.setCurrentRow(0)  # set list index to first
+        fileListWidgetCurrentRow = 0
+        if imgListCurrIndex is not None:
+            fileListWidgetCurrentRow = imgListCurrIndex
+            if fileListWidgetCurrentRow >= self.fileListWidget.count():
+                fileListWidgetCurrentRow = fileListWidgetCurrentRow - 1
+
+        self.fileListWidget.setCurrentRow(
+            fileListWidgetCurrentRow
+        )  # set list index to first
         self.fileDock.setWindowTitle(
             self.fileListName + f" (1/{self.fileListWidget.count()})"
         )  # show image count
@@ -2480,7 +2492,7 @@ class MainWindow(QMainWindow):
             if filename:
                 self.loadFile(filename)
 
-    def openNextImg(self, _value=False):
+    def openNextImg(self, _value=False, imgListCurrIndex=None):
         if not self.mayContinue():
             return
 
@@ -2488,15 +2500,20 @@ class MainWindow(QMainWindow):
             return
 
         filename = None
-        if self.filePath is None:
+        if self.filePath is None and imgListCurrIndex is None:
             filename = self.mImgList[0]
             self.mImgList5 = self.mImgList[:5]
         else:
-            currIndex = self.mImgList.index(self.filePath)
+            if imgListCurrIndex is None:
+                currIndex = self.mImgList.index(self.filePath)
+            else:
+                currIndex = imgListCurrIndex - 1
+
             if currIndex + 1 < len(self.mImgList):
                 filename = self.mImgList[currIndex + 1]
                 self.mImgList5 = self.indexTo5Files(currIndex + 1)
             else:
+                filename = self.mImgList[currIndex]
                 self.mImgList5 = self.indexTo5Files(currIndex)
         if filename:
             print("file name in openNext is ", filename)
@@ -2616,8 +2633,6 @@ class MainWindow(QMainWindow):
                 if imgidx in self.PPlabel.keys():
                     self.PPlabel.pop(imgidx)
 
-                self.filePath = None
-                self.openNextImg()
                 self.importDirImages(self.lastOpenDir, isDelete=True)
 
     def deleteImgDialog(self):
