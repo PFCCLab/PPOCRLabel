@@ -2504,7 +2504,6 @@ class MainWindow(QMainWindow):
             filename = self.mImgList[0]
             self.mImgList5 = self.mImgList[:5]
         else:
-
             if imgListCurrIndex is None:
                 currIndex = self.mImgList.index(self.filePath)
             else:
