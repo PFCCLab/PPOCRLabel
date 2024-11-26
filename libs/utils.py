@@ -232,14 +232,16 @@ def convert_token(html_list):
             elif col == "td":
                 token_list.extend(["<td>", "</td>"])
             else:
-                token_list.append("<td")
-                if "colspan" in col:
-                    _, n = col.split("colspan=")
-                    token_list.append(' colspan="{}"'.format(int(n)))
-                if "rowspan" in col:
-                    _, n = col.split("rowspan=")
-                    token_list.append(' rowspan="{}"'.format(int(n)))
-                token_list.extend([">", "</td>"])
+                token_list.append("<td")  # Start the td tag
+                # Use regex to match "colspan" and "rowspan" attributes and their values
+                colspan_match = re.search(r"colspan=(\d+)", col)
+                rowspan_match = re.search(r"rowspan=(\d+)", col)
+                if colspan_match:
+                    token_list.append(f' colspan="{colspan_match.group(1)}"')
+                if rowspan_match:
+                    token_list.append(f' rowspan="{rowspan_match.group(1)}"')
+                token_list.append(">")  # End the opening td tag
+                token_list.append("</td>")  # Close the td tag
         token_list.append("</tr>")
     token_list.append("</tbody>")
 

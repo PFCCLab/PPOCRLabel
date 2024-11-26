@@ -3181,7 +3181,6 @@ class MainWindow(QMainWindow):
         """
         export PPLabel and CSV to JSON (PubTabNet)
         """
-        import pandas as pd
 
         # automatically save annotations
         self.saveFilestate()
