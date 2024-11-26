@@ -38,7 +38,15 @@ from PyQt5.QtCore import (
     QPointF,
     QProcess,
 )
-from PyQt5.QtGui import QImage, QCursor, QPixmap, QImageReader, QColor, QIcon
+from PyQt5.QtGui import (
+    QImage,
+    QCursor,
+    QPixmap,
+    QImageReader,
+    QColor,
+    QIcon,
+    QFontDatabase,
+)
 from PyQt5.QtWidgets import (
     QMainWindow,
     QListWidget,
@@ -100,6 +108,8 @@ from libs.utils import (
     newIcon,
     rebuild_html_from_ppstructure_label,
     stepsInfo,
+    polygon_bounding_box_center_and_area,
+    map_value,
     struct,
 )
 from libs.labelColor import label_colormap
@@ -129,10 +139,18 @@ class MainWindow(QMainWindow):
         self,
         lang="ch",
         gpu=False,
+        img_list_natural_sort=True,
+        bbox_auto_zoom_center=False,
         kie_mode=False,
         default_filename=None,
         default_predefined_class_file=None,
         default_save_dir=None,
+        det_model_dir=None,
+        rec_model_dir=None,
+        rec_char_dict_path=None,
+        cls_model_dir=None,
+        label_font_path=None,
+        selected_shape_color=(255, 255, 0),
     ):
         super(MainWindow, self).__init__()
         self.setWindowTitle(__appname__)
@@ -145,6 +163,8 @@ class MainWindow(QMainWindow):
         settings = self.settings
         self.lang = lang
         self.gpu = gpu
+        self.img_list_natural_sort = img_list_natural_sort
+        self.bbox_auto_zoom_center = bbox_auto_zoom_center
 
         # Load string bundle for i18n
         if lang not in ["ch", "en"]:
@@ -163,15 +183,27 @@ class MainWindow(QMainWindow):
         self.key_dialog_tip = getStr("keyDialogTip")
 
         self.defaultSaveDir = default_save_dir
-        self.ocr = PaddleOCR(
-            use_pdserving=False,
-            use_angle_cls=True,
-            det=True,
-            cls=True,
-            use_gpu=gpu,
-            lang=lang,
-            show_log=False,
-        )
+
+        params = {
+            "use_pdserving": False,
+            "use_angle_cls": True,
+            "det": True,
+            "cls": True,
+            "use_gpu": gpu,
+            "lang": lang,
+            "show_log": False,
+        }
+
+        if det_model_dir is not None:
+            params["det_model_dir"] = det_model_dir
+        if rec_model_dir is not None:
+            params["rec_model_dir"] = rec_model_dir
+        if rec_char_dict_path is not None:
+            params["rec_char_dict_path"] = rec_char_dict_path
+        if cls_model_dir is not None:
+            params["cls_model_dir"] = cls_model_dir
+
+        self.ocr = PaddleOCR(**params)
         self.table_ocr = PPStructure(
             use_pdserving=False, use_gpu=gpu, lang=lang, layout=False, show_log=False
         )
@@ -1168,6 +1200,18 @@ class MainWindow(QMainWindow):
         if self.filePath and os.path.isdir(self.filePath):
             self.openDirDialog(dirpath=self.filePath, silent=True)
 
+        # load label font
+        self.label_font_family = None
+        if label_font_path is not None:
+            label_font_id = QFontDatabase.addApplicationFont(label_font_path)
+            if label_font_id >= 0:
+                self.label_font_family = QFontDatabase.applicationFontFamilies(
+                    label_font_id
+                )[0]
+
+        # selected shape color
+        self.selected_shape_color = selected_shape_color
+
     def menu(self, title, actions=None):
         menu = self.menuBar().addMenu(title)
         if actions:
@@ -1618,7 +1662,12 @@ class MainWindow(QMainWindow):
         s = []
         shape_index = 0
         for label, points, line_color, key_cls, difficult in shapes:
-            shape = Shape(label=label, line_color=line_color, key_cls=key_cls)
+            shape = Shape(
+                label=label,
+                line_color=line_color,
+                key_cls=key_cls,
+                font_family=self.label_font_family,
+            )
             for x, y in points:
                 # Ensure the labels are within the bounds of the image. If not, fix them.
                 x, y, snapped = self.canvas.snapPointToCanvas(x, y)
@@ -1895,7 +1944,11 @@ class MainWindow(QMainWindow):
         shape.vertex_fill_color = QColor(r, g, b)
         shape.hvertex_fill_color = QColor(255, 255, 255)
         shape.fill_color = QColor(r, g, b, 32)
-        shape.select_line_color = QColor(255, 255, 255)
+        shape.select_line_color = QColor(
+            self.selected_shape_color[0],
+            self.selected_shape_color[1],
+            self.selected_shape_color[2],
+        )
         shape.select_fill_color = QColor(r, g, b, 32)
 
     def _get_rgb_by_label(self, label, kie_mode):
@@ -1925,7 +1978,7 @@ class MainWindow(QMainWindow):
             int(self.zoomWidget.value() + increment)
         )  # set zoom slider value
 
-    def zoomRequest(self, delta):
+    def zoomRequest(self, delta, pos: QPoint = None):
         # get the current scrollbar positions
         # calculate the percentages ~ coordinates
         h_bar = self.scrollBars[Qt.Horizontal]
@@ -1940,8 +1993,10 @@ class MainWindow(QMainWindow):
         # where 0 = move left
         #       1 = move right
         # up and down analogous
-        cursor = QCursor()
-        pos = cursor.pos()
+        if pos is None:
+            cursor = QCursor()
+            pos = cursor.pos()
+
         relative_pos = QWidget.mapFromGlobal(self, pos)
 
         cursor_x = relative_pos.x()
@@ -1995,6 +2050,7 @@ class MainWindow(QMainWindow):
 
     def loadFile(self, filePath=None, isAdjustScale=True):
         """Load the specified file, or the last opened file if None."""
+        self.canvas.shape_move_index = None
         if self.dirty:
             self.mayContinue()
         self.resetState()
@@ -2099,6 +2155,20 @@ class MainWindow(QMainWindow):
             )
 
             self.canvas.setFocus(True)
+
+            if self.bbox_auto_zoom_center:
+                if len(self.canvas.shapes) > 0:
+                    (
+                        center_x,
+                        center_y,
+                        shape_area,
+                    ) = polygon_bounding_box_center_and_area(
+                        self.canvas.shapes[0].points
+                    )
+                    if shape_area < 30000:
+                        zoom_value = 120 * map_value(shape_area, 100, 30000, 20, 0)
+                        self.zoomRequest(zoom_value, QPoint(center_x, center_y))
+                        # print(" =========> ", shape_area, " ==> ", zoom_value)
             return True
         return False
 
@@ -2148,9 +2218,12 @@ class MainWindow(QMainWindow):
             self.canvas.verified = False
 
     def validFilestate(self, filePath):
-        if filePath not in self.fileStatedict.keys():
-            return None
-        elif self.fileStatedict[filePath] == 1:
+        if filePath in self.fileStatedict.keys() and self.fileStatedict[filePath] == 1:
+            return True
+        elif (
+            self.getImglabelidx(filePath) in self.fileStatedict.keys()
+            and self.fileStatedict[self.getImglabelidx(filePath)] == 1
+        ):
             return True
         else:
             return False
@@ -2246,7 +2319,10 @@ class MainWindow(QMainWindow):
                 relativePath = os.path.join(folderPath, file)
                 path = ustr(os.path.abspath(relativePath))
                 images.append(path)
-        natural_sort(images, key=lambda x: x.lower())
+        if self.img_list_natural_sort:
+            natural_sort(images, key=lambda x: x.lower())
+        else:
+            images.sort()
         return images
 
     def openDirDialog(self, _value=False, dirpath=None, silent=False):
@@ -2354,11 +2430,15 @@ class MainWindow(QMainWindow):
         )
         self.statusBar().show()
 
+        imgListCurrIndex = None
+        if self.filePath != None:
+            imgListCurrIndex = self.mImgList.index(self.filePath)
+
         self.filePath = None
         self.fileListWidget.clear()
         self.mImgList = self.scanAllImages(dirpath)
         self.mImgList5 = self.mImgList[:5]
-        self.openNextImg()
+        self.openNextImg(imgListCurrIndex=imgListCurrIndex)
         doneicon = newIcon("done")
         closeicon = newIcon("close")
         for imgPath in self.mImgList:
@@ -2384,7 +2464,15 @@ class MainWindow(QMainWindow):
         self.actions.rotateLeft.setEnabled(True)
         self.actions.rotateRight.setEnabled(True)
 
-        self.fileListWidget.setCurrentRow(0)  # set list index to first
+        fileListWidgetCurrentRow = 0
+        if imgListCurrIndex is not None:
+            fileListWidgetCurrentRow = imgListCurrIndex
+            if fileListWidgetCurrentRow >= self.fileListWidget.count():
+                fileListWidgetCurrentRow = fileListWidgetCurrentRow - 1
+
+        self.fileListWidget.setCurrentRow(
+            fileListWidgetCurrentRow
+        )  # set list index to first
         self.fileDock.setWindowTitle(
             self.fileListName + f" (1/{self.fileListWidget.count()})"
         )  # show image count
@@ -2404,7 +2492,7 @@ class MainWindow(QMainWindow):
             if filename:
                 self.loadFile(filename)
 
-    def openNextImg(self, _value=False):
+    def openNextImg(self, _value=False, imgListCurrIndex=None):
         if not self.mayContinue():
             return
 
@@ -2412,15 +2500,20 @@ class MainWindow(QMainWindow):
             return
 
         filename = None
-        if self.filePath is None:
+        if self.filePath is None and imgListCurrIndex is None:
             filename = self.mImgList[0]
             self.mImgList5 = self.mImgList[:5]
         else:
-            currIndex = self.mImgList.index(self.filePath)
+            if imgListCurrIndex is None:
+                currIndex = self.mImgList.index(self.filePath)
+            else:
+                currIndex = imgListCurrIndex - 1
+
             if currIndex + 1 < len(self.mImgList):
                 filename = self.mImgList[currIndex + 1]
                 self.mImgList5 = self.indexTo5Files(currIndex + 1)
             else:
+                filename = self.mImgList[currIndex]
                 self.mImgList5 = self.indexTo5Files(currIndex)
         if filename:
             print("file name in openNext is ", filename)
@@ -2473,7 +2566,7 @@ class MainWindow(QMainWindow):
                 item = self.fileListWidget.item(currIndex)
                 item.setIcon(newIcon("done"))
 
-                self.fileStatedict[self.filePath] = 1
+                self.fileStatedict[self.getImglabelidx(self.filePath)] = 1
                 if len(self.fileStatedict) % self.autoSaveNum == 0:
                     self.saveFilestate()
                     self.savePPlabel(mode="Auto")
@@ -2539,7 +2632,7 @@ class MainWindow(QMainWindow):
                 imgidx = self.getImglabelidx(self.filePath)
                 if imgidx in self.PPlabel.keys():
                     self.PPlabel.pop(imgidx)
-                self.openNextImg()
+
                 self.importDirImages(self.lastOpenDir, isDelete=True)
 
     def deleteImgDialog(self):
@@ -2753,6 +2846,8 @@ class MainWindow(QMainWindow):
         else:
             spliter = "/"
         filepathsplit = filePath.split(spliter)[-2:]
+        if len(filepathsplit) == 1:
+            return filePath
         return filepathsplit[0] + "/" + filepathsplit[1]
 
     def autoRecognition(self):
@@ -3241,7 +3336,7 @@ class MainWindow(QMainWindow):
                 states = f.readlines()
                 for each in states:
                     file, state = each.split("\t")
-                    self.fileStatedict[file] = 1
+                    self.fileStatedict[self.getImglabelidx(file)] = 1
                 self.actions.saveLabel.setEnabled(True)
                 self.actions.saveRec.setEnabled(True)
                 self.actions.exportJSON.setEnabled(True)
@@ -3301,8 +3396,9 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Information", "Check the image first")
             return
 
-        rec_gt_dir = os.path.dirname(self.PPlabelpath) + "/rec_gt.txt"
-        crop_img_dir = os.path.dirname(self.PPlabelpath) + "/crop_img/"
+        base_dir = os.path.dirname(self.PPlabelpath)
+        rec_gt_dir = base_dir + "/rec_gt.txt"
+        crop_img_dir = base_dir + "/crop_img/"
         ques_img = []
         if not os.path.exists(crop_img_dir):
             os.mkdir(crop_img_dir)
@@ -3311,7 +3407,8 @@ class MainWindow(QMainWindow):
             for key in self.fileStatedict:
                 idx = self.getImglabelidx(key)
                 try:
-                    img = cv2.imdecode(np.fromfile(key, dtype=np.uint8), -1)
+                    img_path = os.path.dirname(base_dir) + "/" + key
+                    img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), -1)
                     for i, label in enumerate(self.PPlabel[idx]):
                         if label["difficult"]:
                             continue
@@ -3493,6 +3590,14 @@ def str2bool(v):
     return v.lower() in ("true", "t", "1")
 
 
+def parse_rgb(value):
+    r, g, b = value.split(",")
+    r, g, b = int(r), int(g), int(b)
+    if not (0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
+        raise argparse.ArgumentTypeError("RGB values must be between 0 and 255.")
+    return (r, g, b)
+
+
 def get_main_app(argv=[]):
     """
     Standard boilerplate Qt application code.
@@ -3505,6 +3610,9 @@ def get_main_app(argv=[]):
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("--lang", type=str, default="ch", nargs="?")
     arg_parser.add_argument("--gpu", type=str2bool, default=True, nargs="?")
+    arg_parser.add_argument(
+        "--img_list_natural_sort", type=str2bool, default=True, nargs="?"
+    )
     arg_parser.add_argument("--kie", type=str2bool, default=False, nargs="?")
     arg_parser.add_argument(
         "--predefined_classes_file",
@@ -3513,13 +3621,37 @@ def get_main_app(argv=[]):
         ),
         nargs="?",
     )
+    arg_parser.add_argument("--det_model_dir", type=str, default=None, nargs="?")
+    arg_parser.add_argument("--rec_model_dir", type=str, default=None, nargs="?")
+    arg_parser.add_argument("--rec_char_dict_path", type=str, default=None, nargs="?")
+    arg_parser.add_argument("--cls_model_dir", type=str, default=None, nargs="?")
+    arg_parser.add_argument(
+        "--bbox_auto_zoom_center", type=str2bool, default=False, nargs="?"
+    )
+    arg_parser.add_argument("--label_font_path", type=str, default=None, nargs="?")
+    arg_parser.add_argument(
+        "--selected_shape_color",
+        type=parse_rgb,
+        default="255,255,0",
+        nargs="?",
+        help='An RGB value as "R,G,B".',
+    )
+
     args = arg_parser.parse_args(argv[1:])
 
     win = MainWindow(
         lang=args.lang,
         gpu=args.gpu,
+        img_list_natural_sort=args.img_list_natural_sort,
         kie_mode=args.kie,
         default_predefined_class_file=args.predefined_classes_file,
+        det_model_dir=args.det_model_dir,
+        rec_model_dir=args.rec_model_dir,
+        rec_char_dict_path=args.rec_char_dict_path,
+        cls_model_dir=args.cls_model_dir,
+        bbox_auto_zoom_center=args.bbox_auto_zoom_center,
+        label_font_path=args.label_font_path,
+        selected_shape_color=args.selected_shape_color,
     )
     win.show()
     return app, win
