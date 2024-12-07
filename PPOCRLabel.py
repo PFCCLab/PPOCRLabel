@@ -2474,7 +2474,8 @@ class MainWindow(QMainWindow):
             fileListWidgetCurrentRow
         )  # set list index to first
         self.fileDock.setWindowTitle(
-            self.fileListName + f" (1/{self.fileListWidget.count()})"
+            self.fileListName
+            + f" ({fileListWidgetCurrentRow+1}/{self.fileListWidget.count()})"
         )  # show image count
 
     def openPrevImg(self, _value=False):
