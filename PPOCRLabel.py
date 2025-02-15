@@ -287,11 +287,9 @@ class MainWindow(QMainWindow):
             self.keyListDock.setFeatures(QDockWidget.NoDockWidgetFeatures)
             filelistLayout.addWidget(self.keyListDock)
 
-        self.auto_recognition_num = 0
+        self.auto_recognition_num = 1
 
         self.AutoRecognitionNum = QSpinBox()
-        self.AutoRecognitionNum.setRange(-2147483647, 2147483647)
-        self.AutoRecognitionNum.setValue(self.auto_recognition_num)
         self.AutoRecognitionNum.valueChanged.connect(self.autoRecognitionNum)
         self.AutoRecognitionNum.setFixedWidth(80)
 
@@ -2464,6 +2462,9 @@ class MainWindow(QMainWindow):
         self.additems5(dirpath)
         self.changeFileFolder = True
         self.haveAutoReced = False
+        self.auto_recognition_num = len(self.mImgList)
+        self.AutoRecognitionNum.setRange(0, len(self.mImgList))
+        self.AutoRecognitionNum.setValue(self.auto_recognition_num)
         self.AutoRecognition.setEnabled(True)
         self.reRecogButton.setEnabled(True)
         self.tableRecButton.setEnabled(True)
@@ -2862,11 +2863,11 @@ class MainWindow(QMainWindow):
         return filepathsplit[0] + "/" + filepathsplit[1]
 
     def autoRecognitionNum(self, value):
-        reserved_num = len(self.mImgList) - self.currIndex
-        if value < 0:
-            self.auto_recognition_num = reserved_num
+        remain_num = len(self.mImgList) - self.currIndex
+        if value == 0:
+            self.auto_recognition_num = remain_num
         else:
-            self.auto_recognition_num = min(value, reserved_num)
+            self.auto_recognition_num = min(value, remain_num)
         self.AutoRecognitionNum.setValue(self.auto_recognition_num)
 
     def autoRecognition(self):
