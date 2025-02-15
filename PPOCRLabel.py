@@ -2877,7 +2877,7 @@ class MainWindow(QMainWindow):
         end_index = min(self.currIndex + self.auto_recognition_num, len(self.mImgList))
         images_to_check = self.mImgList[start_index:end_index]
 
-        recorded_basenames = [os.path.basename(path) for path in self.fileStatedict.keys()]
+        recorded_basenames = [os.path.basename(path) for path in self.fileStatedict.keys() if self.fileStatedict[path] == 1]
 
         uncheckedList = []
         for image_path in images_to_check:
