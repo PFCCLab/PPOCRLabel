@@ -51,6 +51,7 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QListWidget,
     QVBoxLayout,
+    QSpinBox,
     QToolButton,
     QHBoxLayout,
     QDockWidget,
@@ -286,11 +287,20 @@ class MainWindow(QMainWindow):
             self.keyListDock.setFeatures(QDockWidget.NoDockWidgetFeatures)
             filelistLayout.addWidget(self.keyListDock)
 
+        self.auto_recognition_num = 0
+
+        self.AutoRecognitionNum = QSpinBox()
+        self.AutoRecognitionNum.setRange(-2147483647, 2147483647)
+        self.AutoRecognitionNum.setValue(self.auto_recognition_num)
+        self.AutoRecognitionNum.valueChanged.connect(self.autoRecognitionNum)
+        self.AutoRecognitionNum.setFixedWidth(80)
+
         self.AutoRecognition = QToolButton()
         self.AutoRecognition.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.AutoRecognition.setIcon(newIcon("Auto"))
         autoRecLayout = QHBoxLayout()
         autoRecLayout.setContentsMargins(0, 0, 0, 0)
+        autoRecLayout.addWidget(self.AutoRecognitionNum)
         autoRecLayout.addWidget(self.AutoRecognition)
         autoRecContainer = QWidget()
         autoRecContainer.setLayout(autoRecLayout)
@@ -2851,21 +2861,37 @@ class MainWindow(QMainWindow):
             return filePath
         return filepathsplit[0] + "/" + filepathsplit[1]
 
+    def autoRecognitionNum(self, value):
+        reserved_num = len(self.mImgList) - self.currIndex
+        if value < 0:
+            self.auto_recognition_num = reserved_num
+        else:
+            self.auto_recognition_num = min(value, reserved_num)
+        self.AutoRecognitionNum.setValue(self.auto_recognition_num)
+
     def autoRecognition(self):
         assert self.mImgList is not None
         print("Using model from ", self.model)
 
-        uncheckedList = [i for i in self.mImgList if i not in self.fileStatedict.keys()]
+        start_index = self.currIndex
+        end_index = min(self.currIndex + self.auto_recognition_num, len(self.mImgList))
+        images_to_check = self.mImgList[start_index:end_index]
+
+        recorded_basenames = [os.path.basename(path) for path in self.fileStatedict.keys()]
+
+        uncheckedList = []
+        for image_path in images_to_check:
+            image_basename = os.path.basename(image_path)
+            if image_basename not in recorded_basenames:
+                uncheckedList.append(image_path)
+
         self.autoDialog = AutoDialog(
             parent=self, ocr=self.ocr, mImgList=uncheckedList, lenbar=len(uncheckedList)
         )
         self.autoDialog.popUp()
-        self.currIndex = len(self.mImgList) - 1
-        self.loadFile(self.filePath)  # ADD
         self.haveAutoReced = True
-        self.AutoRecognition.setEnabled(False)
-        self.actions.AutoRec.setEnabled(False)
-        self.setDirty()
+        self.filePath = self.mImgList[self.currIndex]
+        self.loadFile(self.filePath, isAdjustScale=False)
         self.saveCacheLabel()
 
         self.init_key_list(self.Cachelabel)
