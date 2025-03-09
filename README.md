@@ -315,4 +315,5 @@ PPOCRLabel supports three ways to export Label.txt
 
 ### 4. Related
 
-1.[Tzutalin. LabelImg. Git code (2015)](https://github.com/tzutalin/labelImg)
+1. [Tzutalin. LabelImg. Git code (2015)](https://github.com/tzutalin/labelImg)
+2. [PaddleX Text Detection/Text Recognition Task Module Data Annotation Tutorial](https://paddlepaddle.github.io/PaddleX/latest/en/data_annotations/ocr_modules/text_detection_recognition.html)
