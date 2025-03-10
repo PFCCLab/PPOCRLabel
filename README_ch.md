@@ -294,4 +294,5 @@ python gen_ocr_train_val_test.py --trainValTestRatio 6:2:2 --datasetRootPath ../
 
 ### 4. 参考资料
 
-1.[Tzutalin. LabelImg. Git code (2015)](https://github.com/tzutalin/labelImg)
+1. [Tzutalin. LabelImg. Git code (2015)](https://github.com/tzutalin/labelImg)
+2. [PaddleX文本检测/文本识别任务模块数据标注教程](https://paddlepaddle.github.io/PaddleX/latest/data_annotations/ocr_modules/text_detection_recognition.html)
