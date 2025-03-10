@@ -67,6 +67,8 @@ For more software version requirements, please refer to the instructions in [Ins
 
 PPOCRLabel can be started in two ways: whl package and Python script. The whl package form is more convenient to start, and the python script to start is convenient for secondary development.
 
+> Note: By default, PPOCRLabel starts with a **Chinese** UI (`--lang ch`). To switch to **English**, you need to launch the application with the `--lang en` parameter.
+
 #### Windows
 
 ```bash
