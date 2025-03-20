@@ -1,11 +1,11 @@
-name: Build and Publish Windows Executable 🖥️
+name: Nightly Build Windows Executable 🌙
 on:
   push:
     branches: [main, master]
   schedule:
-    # 每天UTC时间0:00自动运行（相当于北京时间8:00）
+    # Run automatically at 00:00 UTC daily (08:00 Beijing Time)
     - cron: '0 0 * * *'
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:  # Allow manual trigger
 jobs:
   build-windows:
     name: Build Windows executable 🖥️
@@ -39,11 +39,11 @@ jobs:
           name: windows-executable
           path: dist/*.exe
 
-  publish-to-github:
-    name: Publish Windows Executable to GitHub Release
+  publish-nightly:
+    name: Publish Nightly Build to GitHub Release
     needs:
       - build-windows
-    runs-on: windows-latest  # 改为在Windows上运行，与构建环境一致
+    runs-on: windows-latest
     permissions:
       contents: write  # IMPORTANT: mandatory for making GitHub Releases
     steps:
@@ -53,35 +53,37 @@ jobs:
           name: windows-executable
           path: dist/
 
-      - name: Get current date
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y%m%d')"
-        shell: bash
-
-      - name: Create GitHub Release
+      - name: Create or Update Nightly Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          $VERSION="v$(Get-Date -Format 'yyyy.MM.dd')"
+          $BUILD_DATE="$(Get-Date -Format 'yyyy.MM.dd')"
           try {
-            gh release view $VERSION --repo ${{ github.repository }} 2>&1 | Out-Null
+            gh release view nightly --repo ${{ github.repository }} 2>&1 | Out-Null
             # Release exists, delete it
-            gh release delete $VERSION --yes --repo ${{ github.repository }}
+            gh release delete nightly --yes --repo ${{ github.repository }}
           } catch {
             # Release doesn't exist, continue
           }
-          # Create new release
-          gh release create $VERSION --repo ${{ github.repository }} --notes "PPOCRLabel Windows Executable Release $VERSION (Auto-build)"
+          # Create new nightly release
+          gh release create nightly --repo ${{ github.repository }} --prerelease --notes "PPOCRLabel Windows Nightly Build ($BUILD_DATE)"
+
+      - name: Rename executable file
+        run: |
+          $DATE="$(Get-Date -Format 'yyyyMMdd')"
+          $FILES = Get-ChildItem -Path "dist" -Filter "*.exe" -File
+          foreach ($FILE in $FILES) {
+            $NEW_NAME = "PPOCRLabel-nightly-$DATE.exe"
+            Copy-Item -Path $FILE.FullName -Destination "dist/$NEW_NAME"
+          }
 
       - name: Upload executable to GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          $VERSION="v$(Get-Date -Format 'yyyy.MM.dd')"
-          $FILES = Get-ChildItem -Path "dist" -Filter "*.exe" -File
-          foreach ($FILE in $FILES) {
-            gh release upload $VERSION $FILE.FullName --repo ${{ github.repository }} --clobber
-          }
+          $DATE="$(Get-Date -Format 'yyyyMMdd')"
+          # Explicitly set the mime type for exe files to prevent compression
+          gh release upload nightly "dist/PPOCRLabel-nightly-$DATE.exe" --repo ${{ github.repository }} --clobber --mime-type application/octet-stream
 
       - name: Generate SHA256 checksums
         run: |
@@ -93,5 +95,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          $VERSION="v$(Get-Date -Format 'yyyy.MM.dd')"
-          gh release upload $VERSION (Join-Path -Path "dist" -ChildPath "SHA256SUMS.txt") --repo ${{ github.repository }} --clobber
+          gh release upload nightly (Join-Path -Path "dist" -ChildPath "SHA256SUMS.txt") --repo ${{ github.repository }} --clobber
