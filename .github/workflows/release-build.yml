@@ -1,0 +1,86 @@
+name: Release Build Windows Executable 🚀
+on:
+  push:
+    tags:
+      - 'v*'  # Run only when a tag starting with 'v' is pushed
+  workflow_dispatch:  # Allow manual trigger for testing
+jobs:
+  build-windows:
+    name: Build Windows executable 🖥️
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+          pip install paddlepaddle==3.0.0rc1 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
+          pip install paddleocr
+
+      - name: Regenerate Resources (if using PyQt)
+        run: |
+          pip install pyqt5
+          pyrcc5 -o libs/resources.py resources.qrc
+
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller -c PPOCRLabel.py --collect-all paddleocr --collect-all pyclipper --collect-all imghdr --collect-all skimage --collect-all imgaug --collect-all scipy.io --collect-all lmdb --collect-all paddle --hidden-import=pyqt5 -p ./libs -p ./ -p ./data -p ./resources -F
+
+      - name: Store the executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-executable
+          path: dist/*.exe
+
+  publish-release:
+    name: Publish Release to GitHub
+    needs:
+      - build-windows
+    runs-on: windows-latest
+    permissions:
+      contents: write  # IMPORTANT: mandatory for making GitHub Releases
+    steps:
+      - name: Download the executable
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-executable
+          path: dist/
+
+      - name: Get the version
+        id: get_version
+        run: echo "VERSION=${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
+
+      - name: Rename executable file
+        run: |
+          $TAG_NAME="${{ steps.get_version.outputs.VERSION }}"
+          $FILES = Get-ChildItem -Path "dist" -Filter "*.exe" -File
+          foreach ($FILE in $FILES) {
+            $NEW_NAME = "PPOCRLabel-$TAG_NAME.exe"
+            Copy-Item -Path $FILE.FullName -Destination "dist/$NEW_NAME"
+          }
+
+      - name: Upload executable to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $TAG_NAME="${{ steps.get_version.outputs.VERSION }}"
+          # Upload the exe file directly
+          gh release upload $TAG_NAME "dist/PPOCRLabel-$TAG_NAME.exe" --repo ${{ github.repository }} --clobber
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd dist
+          Get-FileHash -Algorithm SHA256 *.exe | Out-File -FilePath SHA256SUMS.txt
+          cd ..
+
+      - name: Upload checksums to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $TAG_NAME="${{ steps.get_version.outputs.VERSION }}"
+          gh release upload $TAG_NAME (Join-Path -Path "dist" -ChildPath "SHA256SUMS.txt") --repo ${{ github.repository }} --clobber

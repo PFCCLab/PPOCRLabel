@@ -1,0 +1,98 @@
+name: Nightly Build Windows Executable 🌙
+on:
+  push:
+    branches: [main, master]
+  schedule:
+    # Run automatically at 00:00 UTC daily (08:00 Beijing Time)
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # Allow manual trigger
+jobs:
+  build-windows:
+    name: Build Windows executable 🖥️
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+          pip install paddlepaddle==3.0.0rc1 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
+          pip install paddleocr
+
+      - name: Regenerate Resources (if using PyQt)
+        run: |
+          pip install pyqt5
+          pyrcc5 -o libs/resources.py resources.qrc
+
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller -c PPOCRLabel.py --collect-all paddleocr --collect-all pyclipper --collect-all imghdr --collect-all skimage --collect-all imgaug --collect-all scipy.io --collect-all lmdb --collect-all paddle --hidden-import=pyqt5 -p ./libs -p ./ -p ./data -p ./resources -F
+
+      - name: Store the executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-executable
+          path: dist/*.exe
+
+  publish-nightly:
+    name: Publish Nightly Build to GitHub Release
+    needs:
+      - build-windows
+    runs-on: windows-latest
+    permissions:
+      contents: write  # IMPORTANT: mandatory for making GitHub Releases
+    steps:
+      - name: Download the executable
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-executable
+          path: dist/
+
+      - name: Create or Update Nightly Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $BUILD_DATE="$(Get-Date -Format 'yyyy.MM.dd')"
+          try {
+            gh release view nightly --repo ${{ github.repository }} 2>&1 | Out-Null
+            # Release exists, delete it
+            gh release delete nightly --yes --repo ${{ github.repository }}
+          } catch {
+            # Release doesn't exist, continue
+          }
+          # Create new nightly release
+          gh release create nightly --repo ${{ github.repository }} --prerelease --notes "PPOCRLabel Windows Nightly Build ($BUILD_DATE)"
+
+      - name: Rename executable file
+        run: |
+          $DATE="$(Get-Date -Format 'yyyyMMdd')"
+          $FILES = Get-ChildItem -Path "dist" -Filter "*.exe" -File
+          foreach ($FILE in $FILES) {
+            $NEW_NAME = "PPOCRLabel-nightly-$DATE.exe"
+            Copy-Item -Path $FILE.FullName -Destination "dist/$NEW_NAME"
+          }
+
+      - name: Upload executable to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $DATE="$(Get-Date -Format 'yyyyMMdd')"
+          # Upload the exe file directly
+          gh release upload nightly "dist/PPOCRLabel-nightly-$DATE.exe" --repo ${{ github.repository }} --clobber
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd dist
+          Get-FileHash -Algorithm SHA256 *.exe | Out-File -FilePath SHA256SUMS.txt
+          cd ..
+
+      - name: Upload checksums to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload nightly (Join-Path -Path "dist" -ChildPath "SHA256SUMS.txt") --repo ${{ github.repository }} --clobber
