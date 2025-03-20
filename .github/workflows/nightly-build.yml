@@ -1,7 +1,5 @@
 name: Nightly Build Windows Executable 🌙
 on:
-  push:
-    branches: [main, master]
   schedule:
     # Run automatically at 00:00 UTC daily (08:00 Beijing Time)
     - cron: '0 0 * * *'
