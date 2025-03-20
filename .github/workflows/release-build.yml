@@ -69,8 +69,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           $TAG_NAME="${{ steps.get_version.outputs.VERSION }}"
-          # Explicitly set the mime type for exe files to prevent compression
-          gh release upload $TAG_NAME "dist/PPOCRLabel-$TAG_NAME.exe" --repo ${{ github.repository }} --clobber --mime-type application/octet-stream
+          # Upload the exe file directly
+          gh release upload $TAG_NAME "dist/PPOCRLabel-$TAG_NAME.exe" --repo ${{ github.repository }} --clobber
 
       - name: Generate SHA256 checksums
         run: |

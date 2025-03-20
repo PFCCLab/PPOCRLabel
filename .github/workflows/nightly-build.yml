@@ -82,8 +82,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           $DATE="$(Get-Date -Format 'yyyyMMdd')"
-          # Explicitly set the mime type for exe files to prevent compression
-          gh release upload nightly "dist/PPOCRLabel-nightly-$DATE.exe" --repo ${{ github.repository }} --clobber --mime-type application/octet-stream
+          # Upload the exe file directly
+          gh release upload nightly "dist/PPOCRLabel-nightly-$DATE.exe" --repo ${{ github.repository }} --clobber
 
       - name: Generate SHA256 checksums
         run: |
