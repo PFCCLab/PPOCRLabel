@@ -7,7 +7,7 @@ name = "PPOCRLabel"
 dynamic = ["version"]
 dependencies = [
   "pyqt5",
-  "paddleocr",
+  "paddleocr>=2.7.0,<3.0",
   "openpyxl",
   "tqdm",
   "premailer",
