@@ -30,9 +30,9 @@ class StringBundle:
     __create_key = object()
 
     def __init__(self, create_key, localeStr):
-        assert create_key == StringBundle.__create_key, (
-            "StringBundle must be created using StringBundle.getBundle"
-        )
+        assert (
+            create_key == StringBundle.__create_key
+        ), "StringBundle must be created using StringBundle.getBundle"
         self.idToMessage = {}
         paths = self.__create_lookup_fallback_list(localeStr)
         for path in paths:

@@ -130,9 +130,9 @@ def genDetRecTrainVal(args):
 if __name__ == "__main__":
     """
     Function description: Split detection and recognition datasets into training, validation, and test sets
-    Note: You can adjust parameters according to your own path and needs. Image data is often annotated 
-    in batches by multiple people collaborating. Each batch of image data is placed in a folder and 
-    annotated using PPOCRLabel. This creates a need to aggregate multiple annotated image folders 
+    Note: You can adjust parameters according to your own path and needs. Image data is often annotated
+    in batches by multiple people collaborating. Each batch of image data is placed in a folder and
+    annotated using PPOCRLabel. This creates a need to aggregate multiple annotated image folders
     and split them into training, validation, and test sets.
     """
     parser = argparse.ArgumentParser()

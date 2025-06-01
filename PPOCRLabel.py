@@ -2383,9 +2383,7 @@ class MainWindow(QMainWindow):
 
         else:
             if self.lang == "ch":
-                self.msgBox.warning(
-                    self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!"
-                )
+                self.msgBox.warning(self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!")
             else:
                 self.msgBox.warning(
                     self,
@@ -2925,7 +2923,9 @@ class MainWindow(QMainWindow):
         img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), 1)
         if self.canvas.shapes:
             self.result_dic = []
-            self.result_dic_locked = []  # result_dic_locked stores the ocr result of self.canvas.lockedShapes
+            self.result_dic_locked = (
+                []
+            )  # result_dic_locked stores the ocr result of self.canvas.lockedShapes
             rec_flag = 0
             for shape in self.canvas.shapes:
                 box = [[int(p.x()), int(p.y())] for p in shape.points]

@@ -152,7 +152,9 @@ class AutoDialog(QDialog):
         avg_time = (time.time() - self.time_start) / i
         time_left = str(
             datetime.timedelta(seconds=avg_time * (self.len_bar - i))
-        ).split(".")[0]  # Remove microseconds
+        ).split(".")[
+            0
+        ]  # Remove microseconds
         # show
         self.setWindowTitle("PPOCRLabel  --  " + f"Time Left: {time_left}")
 
