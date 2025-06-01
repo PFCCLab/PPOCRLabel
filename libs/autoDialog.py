@@ -1,59 +1,71 @@
-try:
-    from PyQt5.QtGui import *
-    from PyQt5.QtCore import *
-    from PyQt5.QtWidgets import *
-except ImportError:
-    from PyQt4.QtGui import *
-    from PyQt4.QtCore import *
-
-import time
 import datetime
 import json
+import logging
+import time
+
 import cv2
 import numpy as np
+from PyQt5.QtCore import QThread, pyqtSignal, Qt
+from PyQt5.QtWidgets import (
+    QDialog,
+    QDialogButtonBox as BB,
+    QProgressBar,
+    QVBoxLayout,
+    QListWidget,
+)
 
 from libs.utils import newIcon
 
-BB = QDialogButtonBox
+logger = logging.getLogger("PPOCRLabel")
 
 
 class Worker(QThread):
     progressBarValue = pyqtSignal(int)
     listValue = pyqtSignal(str)
-    endsignal = pyqtSignal(int, str)
+    end_signal = pyqtSignal(int, str)
     handle = 0
 
-    def __init__(self, ocr, mImgList, mainThread, model):
+    def __init__(self, ocr, img_list, main_thread, model):
         super(Worker, self).__init__()
+        self.result_dic = None
         self.ocr = ocr
-        self.mImgList = mImgList
-        self.mainThread = mainThread
+        self.img_list = img_list
+        self.mainThread = main_thread
         self.model = model
         self.setStackSize(1024 * 1024)
 
     def run(self):
         try:
             findex = 0
-            for Imgpath in self.mImgList:
+            for img_path in self.img_list:
                 if self.handle == 0:
-                    self.listValue.emit(Imgpath)
+                    self.listValue.emit(img_path)
                     if self.model == "paddle":
                         h, w, _ = cv2.imdecode(
-                            np.fromfile(Imgpath, dtype=np.uint8), 1
+                            np.fromfile(img_path, dtype=np.uint8), 1
                         ).shape
                         if h > 32 and w > 32:
-                            self.result_dic = self.ocr.ocr(Imgpath, cls=True, det=True)[
-                                0
-                            ]
+                            result = self.ocr.predict(img_path)[0]
+                            self.result_dic = []
+                            for poly, text, score in zip(
+                                result["rec_polys"],
+                                result["rec_texts"],
+                                result["rec_scores"],
+                            ):
+                                # Convert numpy array to list for JSON serialization
+                                poly_list = (
+                                    poly.tolist() if hasattr(poly, "tolist") else poly
+                                )
+                                self.result_dic.append([poly_list, (text, score)])
                         else:
-                            print(
-                                "The size of", Imgpath, "is too small to be recognised"
+                            logger.warning(
+                                "The size of %s is too small to be recognised", img_path
                             )
                             self.result_dic = None
 
                     # 结果保存
                     if self.result_dic is None or len(self.result_dic) == 0:
-                        print("Can not recognise file", Imgpath)
+                        logger.warning("Can not recognise file %s", img_path)
                         pass
                     else:
                         strs = ""
@@ -73,32 +85,37 @@ class Worker(QThread):
                         # Sending large amounts of data repeatedly through pyqtSignal may affect the program efficiency
                         self.listValue.emit(strs)
                         self.mainThread.result_dic = self.result_dic
-                        self.mainThread.filePath = Imgpath
+                        self.mainThread.filePath = img_path
                         # 保存
                         self.mainThread.saveFile(mode="Auto")
                     findex += 1
                     self.progressBarValue.emit(findex)
                 else:
                     break
-            self.endsignal.emit(0, "readAll")
+            self.end_signal.emit(0, "readAll")
             self.exec()
         except Exception as e:
-            print(e)
+            logger.error("Error in worker thread: %s", e)
             raise
 
 
 class AutoDialog(QDialog):
     def __init__(
-        self, text="Enter object label", parent=None, ocr=None, mImgList=None, lenbar=0
+        self,
+        text="Enter object label",
+        parent=None,
+        ocr=None,
+        image_list=None,
+        len_bar=0,
     ):
         super(AutoDialog, self).__init__(parent)
         self.setFixedWidth(1000)
         self.parent = parent
         self.ocr = ocr
-        self.mImgList = mImgList
-        self.lender = lenbar
-        self.pb = QProgressBar()
-        self.pb.setRange(0, self.lender)
+        self.img_list = image_list
+        self.len_bar = len_bar
+        self.pb = QProgressBar(parent)
+        self.pb.setRange(0, self.len_bar)
         self.pb.setValue(0)
 
         layout = QVBoxLayout()
@@ -121,25 +138,25 @@ class AutoDialog(QDialog):
 
         # self.setWindowFlags(Qt.WindowCloseButtonHint)
 
-        self.thread_1 = Worker(self.ocr, self.mImgList, self.parent, "paddle")
+        self.thread_1 = Worker(self.ocr, self.img_list, self.parent, "paddle")
         self.thread_1.progressBarValue.connect(self.handleProgressBarSingal)
         self.thread_1.listValue.connect(self.handleListWidgetSingal)
-        self.thread_1.endsignal.connect(self.handleEndsignalSignal)
+        self.thread_1.end_signal.connect(self.handleEndsignalSignal)
         self.time_start = time.time()  # save start time
 
     def handleProgressBarSingal(self, i):
         self.pb.setValue(i)
 
         # calculate time left of auto labeling
-        avg_time = (
-            time.time() - self.time_start
-        ) / i  # Use average time to prevent time fluctuations
-        time_left = str(datetime.timedelta(seconds=avg_time * (self.lender - i))).split(
-            "."
-        )[
+        # Use average time to prevent time fluctuations
+        avg_time = (time.time() - self.time_start) / i
+        time_left = str(
+            datetime.timedelta(seconds=avg_time * (self.len_bar - i))
+        ).split(".")[
             0
         ]  # Remove microseconds
-        self.setWindowTitle("PPOCRLabel  --  " + f"Time Left: {time_left}")  # show
+        # show
+        self.setWindowTitle("PPOCRLabel  --  " + f"Time Left: {time_left}")
 
     def handleListWidgetSingal(self, i):
         self.listWidget.addItem(i)
@@ -152,14 +169,9 @@ class AutoDialog(QDialog):
             self.buttonBox.button(BB.Cancel).setEnabled(False)
 
     def reject(self):
-        print("reject")
+        logger.debug("Auto recognition dialog rejected")
         self.thread_1.handle = -1
         self.thread_1.quit()
-        # del self.thread_1
-        # if self.thread_1.isRunning():
-        #     self.thread_1.terminate()
-        # self.thread_1.quit()
-        # super(AutoDialog,self).reject()
         while not self.thread_1.isFinished():
             pass
         self.accept()
@@ -170,22 +182,13 @@ class AutoDialog(QDialog):
     def postProcess(self):
         try:
             self.edit.setText(self.edit.text().trimmed())
-            # print(self.edit.text())
         except AttributeError:
-            # PyQt5: AttributeError: 'str' object has no attribute 'trimmed'
             self.edit.setText(self.edit.text())
-            print(self.edit.text())
+            logger.debug("Auto dialog text: %s", self.edit.text())
 
     def popUp(self):
         self.thread_1.start()
         return 1 if self.exec_() else None
 
-    def closeEvent(self, event):
-        print("???")
-        # if self.thread_1.isRunning():
-        #     self.thread_1.quit()
-        #
-        #     # self._thread.terminate()
-        # # del self.thread_1
-        # super(AutoDialog, self).closeEvent(event)
+    def closeEvent(self, event, **kwargs):
         self.reject()

@@ -11,6 +11,7 @@
 # CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import hashlib
+import logging
 import os
 import re
 import sys
@@ -21,9 +22,11 @@ import numpy as np
 from PyQt5.QtCore import QRegExp, QT_VERSION_STR
 from PyQt5.QtGui import QIcon, QRegExpValidator, QColor
 from PyQt5.QtWidgets import QPushButton, QAction, QMenu
-from libs.ustr import ustr
 
-__dir__ = os.path.dirname(os.path.abspath(__file__))  # 获取本程序文件路径
+logger = logging.getLogger("PPOCRLabel")
+
+# The directory where the icon resources are located
+__dir__ = os.path.dirname(os.path.abspath(__file__))
 __iconpath__ = os.path.abspath(os.path.join(__dir__, "../resources/icons"))
 
 
@@ -108,7 +111,7 @@ def fmtShortcut(text):
 
 
 def generateColorByText(text):
-    s = ustr(text)
+    s = text
     hashCode = int(hashlib.sha256(s.encode("utf-8")).hexdigest(), 16)
     r = int((hashCode / 255) % 255)
     g = int((hashCode / 65025) % 255)
@@ -127,7 +130,9 @@ def natural_sort(list, key=lambda s: s):
     """
 
     def get_alphanum_key_func(key):
-        convert = lambda text: int(text) if text.isdigit() else text
+        def convert(text):
+            return int(text) if text.isdigit() else text
+
         return lambda s: [convert(c) for c in re.split("([0-9]+)", key(s))]
 
     sort_key = get_alphanum_key_func(key)
@@ -182,7 +187,7 @@ def get_rotate_crop_image(img, points):
             dst_img = np.rot90(dst_img)
         return dst_img
     except Exception as e:
-        print(e)
+        logger.error("Error in image processing: %s", e)
 
 
 def boxPad(box, imgShape, pad: int) -> np.array:
@@ -227,7 +232,7 @@ def convert_token(html_list):
     for row in html_list:
         token_list.append("<tr>")
         for col in row:
-            if col == None:
+            if col is None:
                 continue
             elif col == "td":
                 token_list.extend(["<td>", "</td>"])

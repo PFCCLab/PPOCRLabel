@@ -5,7 +5,7 @@ import random
 import argparse
 
 
-# 删除划分的训练集、验证集、测试集文件夹，重新创建一个空的文件夹
+# Delete the divided train, val, and test folders and create a new empty folder
 def isCreateOrDeleteFolder(path, flag):
     flagPath = os.path.join(path, flag)
 
@@ -66,7 +66,7 @@ def splitTrainVal(
                 test_txt.write("{}\t{}".format(image_copy_path, image_label))
 
 
-# 删掉存在的文件
+# Remove the file if it exists
 def removeFile(path):
     if os.path.exists(path):
         os.remove(path)
@@ -128,9 +128,13 @@ def genDetRecTrainVal(args):
 
 
 if __name__ == "__main__":
-    # 功能描述：分别划分检测和识别的训练集、验证集、测试集
-    # 说明：可以根据自己的路径和需求调整参数，图像数据往往多人合作分批标注，每一批图像数据放在一个文件夹内用PPOCRLabel进行标注，
-    # 如此会有多个标注好的图像文件夹汇总并划分训练集、验证集、测试集的需求
+    """
+    Function description: Split detection and recognition datasets into training, validation, and test sets
+    Note: You can adjust parameters according to your own path and needs. Image data is often annotated
+    in batches by multiple people collaborating. Each batch of image data is placed in a folder and
+    annotated using PPOCRLabel. This creates a need to aggregate multiple annotated image folders
+    and split them into training, validation, and test sets.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--trainValTestRatio",

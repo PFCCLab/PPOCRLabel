@@ -11,9 +11,11 @@
 # CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import logging
 import pickle
 import os
-import sys
+
+logger = logging.getLogger("PPOCRLabel")
 
 
 class Settings(object):
@@ -21,7 +23,6 @@ class Settings(object):
         # Be default, the home will be in the same folder as labelImg
         home = os.path.expanduser("~")
         self.data = {}
-        # self.path = os.path.join(home, '.labelImgSettings.pkl')
         self.path = os.path.join(home, ".autoOCRSettings.pkl")
 
     def __setitem__(self, key, value):
@@ -49,12 +50,12 @@ class Settings(object):
                     self.data = pickle.load(f)
                     return True
         except:
-            print("Loading setting failed")
+            logger.warning("Loading setting failed")
         return False
 
     def reset(self):
         if os.path.exists(self.path):
             os.remove(self.path)
-            print("Remove setting pkl file ${0}".format(self.path))
+            logger.info("Remove setting pkl file %s", self.path)
         self.data = {}
         self.path = None

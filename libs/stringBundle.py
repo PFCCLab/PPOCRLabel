@@ -13,23 +13,17 @@
 
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
 import re
 import os
-import sys
 import locale
-from libs.ustr import ustr
+from PyQt5.QtCore import QFile, QIODevice, QTextStream
 
-__dir__ = os.path.dirname(os.path.abspath(__file__))  # 获取本程序文件路径
+logger = logging.getLogger("PPOCRLabel")
+
+# The directory where the string resources are located
+__dir__ = os.path.dirname(os.path.abspath(__file__))
 __dirpath__ = os.path.abspath(os.path.join(__dir__, "../resources/strings"))
-
-try:
-    from PyQt5.QtCore import *
-except ImportError:
-    if sys.version_info.major >= 3:
-        import sip
-
-        sip.setapi("QVariant", 2)
-    from PyQt4.QtCore import *
 
 
 class StringBundle:
@@ -53,8 +47,8 @@ class StringBundle:
                     if locale.getlocale() and len(locale.getlocale()) > 0
                     else os.getenv("LANG")
                 )
-            except:
-                print("Invalid locale")
+            except Exception:
+                logger.warning("Invalid locale")
                 localeStr = "en"
 
         return StringBundle(cls.__create_key, localeStr)
@@ -85,7 +79,7 @@ class StringBundle:
                 text.setCodec("UTF-8")
 
             while not text.atEnd():
-                line = ustr(text.readLine())
+                line = text.readLine()
                 key_value = line.split(PROP_SEPERATOR)
                 key = key_value[0].strip()
                 value = PROP_SEPERATOR.join(key_value[1:]).strip().strip('"')

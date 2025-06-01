@@ -12,12 +12,15 @@
 # THE SOFTWARE.
 
 import copy
+import logging
 
 from PyQt5.QtCore import Qt, pyqtSignal, QPointF, QPoint
 from PyQt5.QtGui import QPainter, QBrush, QColor, QPixmap
 from PyQt5.QtWidgets import QWidget, QMenu, QApplication
 from libs.shape import Shape
 from libs.utils import distance
+
+logger = logging.getLogger("PPOCRLabel")
 
 CURSOR_DEFAULT = Qt.ArrowCursor
 CURSOR_POINT = Qt.PointingHandCursor
@@ -350,14 +353,16 @@ class Canvas(QWidget):
             if self.fourpoint:
                 targetPos = self.line[self.pointnum]
                 self.current.addPoint(targetPos)
-                print("current points in handleDrawing is ", self.line[self.pointnum])
+                logger.debug(
+                    "current points in handleDrawing is %s", self.line[self.pointnum]
+                )
                 self.update()
                 if self.pointnum == 3:
                     self.finalise()
 
             else:
                 initPos = self.current[0]
-                print("initPos", self.current[0])
+                logger.debug("initPos %s", self.current[0])
                 minX = initPos.x()
                 minY = initPos.y()
                 targetPos = self.line[1]
@@ -369,7 +374,7 @@ class Canvas(QWidget):
                 self.finalise()
 
         elif not self.outOfPixmap(pos):
-            print("release")
+            logger.debug("release")
             self.current = Shape()
             self.current.addPoint(pos)
             self.line.points = [pos, pos]
@@ -610,7 +615,7 @@ class Canvas(QWidget):
             and self.current is not None
             and len(self.current.points) >= 2
         ):
-            print("paint event")
+            logger.debug("paint event")
             drawing_shape = self.current.copy()
             drawing_shape.addPoint(self.line[1])
             drawing_shape.fill = True
@@ -737,7 +742,7 @@ class Canvas(QWidget):
         self.shapesBackups.pop()
         self.shapesBackups.append(shapesBackup)
         if key == Qt.Key_Escape and self.current:
-            print("ESC press")
+            logger.debug("ESC press")
             self.current = None
             self.drawingPolygon.emit(False)
             self.update()
