@@ -216,7 +216,7 @@ class Shape(object):
         if i == self._highlightIndex:
             size, shape = self._highlightSettings[self._highlightMode]
             d *= size
-        if self._highlightIndex:
+        if self._highlightIndex is not None:
             self.vertex_fill_color = self.hvertex_fill_color
         else:
             self.vertex_fill_color = Shape.vertex_fill_color
