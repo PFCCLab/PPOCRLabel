@@ -13,10 +13,12 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 import json
+import logging
 from pathlib import Path
-
 from libs.constants import DEFAULT_ENCODING
 import os
+
+logger = logging.getLogger("PPOCRLabel")
 
 JSON_EXT = ".json"
 ENCODE_METHOD = DEFAULT_ENCODING
@@ -114,7 +116,7 @@ class CreateMLReader:
         try:
             self.parse_json()
         except ValueError:
-            print("JSON decoding failed")
+            logger.error("JSON decoding failed")
 
     def parse_json(self):
         with open(self.jsonpath, "r") as file:

@@ -10,17 +10,21 @@
 # SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
 # CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-try:
-    from PyQt5.QtGui import *
-    from PyQt5.QtCore import *
-    from PyQt5.QtWidgets import *
-except ImportError:
-    from PyQt4.QtGui import *
-    from PyQt4.QtCore import *
 
-from libs.utils import newIcon, labelValidator
+from PyQt5.QtCore import Qt, QPoint, QStringListModel
+from PyQt5.QtGui import QCursor
+from PyQt5.QtWidgets import (
+    QDialog,
+    QDialogButtonBox as BB,
+    QLineEdit,
+    QVBoxLayout,
+    QCompleter,
+)
 
-BB = QDialogButtonBox
+import logging
+from libs.utils import newIcon
+
+logger = logging.getLogger("PPOCRLabel")
 
 
 class LabelDialog(QDialog):
@@ -70,11 +74,11 @@ class LabelDialog(QDialog):
     def postProcess(self):
         try:
             self.edit.setText(self.edit.text().trimmed())
-            # print(self.edit.text())
+            # logger.debug(self.edit.text())
         except AttributeError:
             # PyQt5: AttributeError: 'str' object has no attribute 'trimmed'
             self.edit.setText(self.edit.text())
-            print(self.edit.text())
+            logger.debug("Label dialog text: %s", self.edit.text())
 
     def popUp(self, text="", move=True):
         self.edit.setText(text)

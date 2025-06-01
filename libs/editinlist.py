@@ -13,7 +13,7 @@ class EditInList(QListWidget):
         try:
             if self.edited_item is not None:
                 self.closePersistentEditor(self.edited_item)
-        except:
+        except Exception:
             self.edited_item = self.currentItem()
 
         self.edited_item = self.item(modelindex.row())

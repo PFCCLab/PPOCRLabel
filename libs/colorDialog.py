@@ -10,15 +10,8 @@
 # SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
 # CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-try:
-    from PyQt5.QtGui import *
-    from PyQt5.QtCore import *
-    from PyQt5.QtWidgets import QColorDialog, QDialogButtonBox
-except ImportError:
-    from PyQt4.QtGui import *
-    from PyQt4.QtCore import *
 
-BB = QDialogButtonBox
+from PyQt5.QtWidgets import QColorDialog, QDialogButtonBox as BB
 
 
 class ColorDialog(QColorDialog):

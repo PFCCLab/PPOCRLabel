@@ -18,7 +18,9 @@ import sys
 from PyQt5.QtCore import QPointF
 from PyQt5.QtGui import QColor, QPen, QPainterPath, QFont
 from libs.utils import distance
-from ppocr.utils.logging import get_logger
+import logging
+
+logger = logging.getLogger("PPOCRLabel")
 
 DEFAULT_LINE_COLOR = QColor(0, 255, 0, 128)
 DEFAULT_FILL_COLOR = QColor(255, 0, 0, 128)
@@ -107,9 +109,8 @@ class Shape(object):
                 (self.points[0].x() + self.points[2].x()) / 2,
                 (self.points[0].y() + self.points[2].y()) / 2,
             )
-        except:
+        except Exception:
             self.center = None
-            logger = get_logger()
             logger.warning("The XY coordinates of QPointF are not detectable!")
         self._closed = True
 
@@ -198,7 +199,7 @@ class Shape(object):
                     font.setBold(True)
                     painter.setFont(font)
                     text = ""
-                    if self.idx != None:
+                    if self.idx:
                         text = str(self.idx)
                     if min_y < MIN_Y_LABEL:
                         min_y += MIN_Y_LABEL
@@ -215,7 +216,7 @@ class Shape(object):
         if i == self._highlightIndex:
             size, shape = self._highlightSettings[self._highlightMode]
             d *= size
-        if self._highlightIndex is not None:
+        if self._highlightIndex:
             self.vertex_fill_color = self.hvertex_fill_color
         else:
             self.vertex_fill_color = Shape.vertex_fill_color
