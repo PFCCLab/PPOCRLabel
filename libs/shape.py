@@ -199,7 +199,7 @@ class Shape(object):
                     font.setBold(True)
                     painter.setFont(font)
                     text = ""
-                    if self.idx:
+                    if self.idx is not None:
                         text = str(self.idx)
                     if min_y < MIN_Y_LABEL:
                         min_y += MIN_Y_LABEL
