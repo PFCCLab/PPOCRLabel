@@ -199,7 +199,7 @@ class MainWindow(QMainWindow):
             "lang": self.lang,
             "text_detection_model_name": "PP-OCRv5_server_det",
             "text_recognition_model_name": "PP-OCRv5_server_rec",
-            "enable_mkldnn":False,
+            "enable_mkldnn": False,
         }
 
         if det_model_dir is not None:
@@ -211,10 +211,10 @@ class MainWindow(QMainWindow):
 
         self.ocr = PaddleOCR(**params)
         self.text_recognizer = TextRecognition(
-            model_name="PP-OCRv5_server_rec", model_dir=rec_model_dir, device=self.gpu, enable_mkldnn = False
+            model_name="PP-OCRv5_server_rec", model_dir=rec_model_dir, device=self.gpu, enable_mkldnn=False
         )
         self.text_detector = TextDetection(
-            model_name="PP-OCRv5_server_det", model_dir=det_model_dir, device=self.gpu, enable_mkldnn = False
+            model_name="PP-OCRv5_server_det", model_dir=det_model_dir, device=self.gpu, enable_mkldnn=False
         )
         self.table_ocr = PPStructureV3(
             use_doc_orientation_classify=False,
@@ -225,7 +225,7 @@ class MainWindow(QMainWindow):
             use_chart_recognition=False,
             use_region_detection=False,
             device=self.gpu,
-            enable_mkldnn = False,
+            enable_mkldnn=False,
         )
 
         if os.path.exists("./data/paddle.png"):
