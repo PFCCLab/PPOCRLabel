@@ -3154,6 +3154,7 @@ class MainWindow(QMainWindow):
                 tablepyxl.document_to_xl("", excel_path)
             except AttributeError:  # 如果 tablepyxl 报错，改用 openpyxl
                 import openpyxl
+                
                 wb = openpyxl.Workbook()
                 wb.save(excel_path)
             return
