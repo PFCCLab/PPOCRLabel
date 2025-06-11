@@ -211,10 +211,16 @@ class MainWindow(QMainWindow):
 
         self.ocr = PaddleOCR(**params)
         self.text_recognizer = TextRecognition(
-            model_name="PP-OCRv5_server_rec", model_dir=rec_model_dir, device=self.gpu, enable_mkldnn=False
+            model_name="PP-OCRv5_server_rec",
+            model_dir=rec_model_dir,
+            device=self.gpu,
+            enable_mkldnn=False,
         )
         self.text_detector = TextDetection(
-            model_name="PP-OCRv5_server_det", model_dir=det_model_dir, device=self.gpu, enable_mkldnn=False
+            model_name="PP-OCRv5_server_det",
+            model_dir=det_model_dir,
+            device=self.gpu,
+            enable_mkldnn=False,
         )
         self.table_ocr = PPStructureV3(
             use_doc_orientation_classify=False,
