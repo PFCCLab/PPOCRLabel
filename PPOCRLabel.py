@@ -349,6 +349,8 @@ class MainWindow(QMainWindow):
         self.SaveButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.DelButton = QToolButton()
         self.DelButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.ResortButton = QToolButton()
+        self.ResortButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         leftTopToolBox = QGridLayout()
         leftTopToolBox.addWidget(self.newButton, 0, 0, 1, 1)
@@ -383,10 +385,10 @@ class MainWindow(QMainWindow):
         labelListContainer = QWidget()
         labelListContainer.setLayout(listLayout)
         self.labelList.itemSelectionChanged.connect(self.labelSelectionChanged)
-        self.labelList.clicked.connect(self.labelList.item_clicked)
+        self.labelList.clicked.connect(self.labelList.item_clicked) 
 
         # Connect to itemChanged to detect checkbox changes.
-        self.labelList.itemChanged.connect(self.labelItemChanged)
+        self.labelList.itemChanged.connect(self.labelItemChanged) 
         self.labelListDockName = get_str("recognitionResult")
         self.labelListDock = QDockWidget(self.labelListDockName, self)
         self.labelListDock.setWidget(self.labelList)
@@ -424,10 +426,10 @@ class MainWindow(QMainWindow):
         self.BoxList = QListWidget()
 
         # self.BoxList.itemActivated.connect(self.boxSelectionChanged)
-        self.BoxList.itemSelectionChanged.connect(self.boxSelectionChanged)
-        self.BoxList.itemDoubleClicked.connect(self.editBox)
+        self.BoxList.itemSelectionChanged.connect(self.boxSelectionChanged)  
+        self.BoxList.itemDoubleClicked.connect(self.editBox)                    
         # Connect to itemChanged to detect checkbox changes.
-        self.BoxList.itemChanged.connect(self.boxItemChanged)
+        self.BoxList.itemChanged.connect(self.boxItemChanged) 
         self.BoxListDockName = get_str("detectionBoxposition")
         self.BoxListDock = QDockWidget(self.BoxListDockName, self)
         self.BoxListDock.setWidget(self.BoxList)
@@ -438,6 +440,7 @@ class MainWindow(QMainWindow):
         leftbtmtoolbox = QHBoxLayout()
         leftbtmtoolbox.addWidget(self.SaveButton)
         leftbtmtoolbox.addWidget(self.DelButton)
+        leftbtmtoolbox.addWidget(self.ResortButton)
         leftbtmtoolboxcontainer = QWidget()
         leftbtmtoolboxcontainer.setLayout(leftbtmtoolbox)
         listLayout.addWidget(leftbtmtoolboxcontainer)
@@ -897,6 +900,14 @@ class MainWindow(QMainWindow):
             get_str("expandBoxDetail"),
             enabled=False,
         )
+        resort = action(
+            get_str("resortposition"),
+            self.resortBoxposion,
+            "Ctrl+B",
+            "resort",
+            get_str("resortpositiondetail"),
+            enabled=True,
+        )
 
         self.editButton.setDefaultAction(edit)
         self.newButton.setDefaultAction(create)
@@ -906,6 +917,7 @@ class MainWindow(QMainWindow):
         self.AutoRecognition.setDefaultAction(AutoRec)
         self.reRecogButton.setDefaultAction(reRec)
         self.tableRecButton.setDefaultAction(tableRec)
+        self.ResortButton.setDefaultAction(resort)
         # self.preButton.setDefaultAction(openPrevImg)
         # self.nextButton.setDefaultAction(openNextImg)
 
@@ -995,6 +1007,7 @@ class MainWindow(QMainWindow):
             lock=lock,
             exportJSON=exportJSON,
             expand=expand,
+            resort=resort,
             fileMenuActions=(
                 opendir,
                 open_dataset_dir,
@@ -1012,6 +1025,7 @@ class MainWindow(QMainWindow):
                 delete,
                 singleRere,
                 cellreRec,
+                resort,  
                 None,
                 undo,
                 undoLastPoint,
@@ -3651,8 +3665,83 @@ class MainWindow(QMainWindow):
             logger.debug("Shape points: %s", shape.points)
             self.updateBoxlist()
             self.setDirty()
-
-
+            
+    def resortBoxposion(self):
+        # Sort from top to bottom, left to right
+        def sort_rectangles(rectangles, row_height_threshold=0.5):
+            if not rectangles:
+                return []
+            
+            def get_top_left(rect):
+                xs = [p[0] for p in rect]
+                ys = [p[1] for p in rect]
+                return (min(xs), min(ys))
+            
+            avg_height = sum([max(p[1] for p in rect) - min(p[1] for p in rect) for rect in rectangles]) / len(rectangles)
+            threshold = avg_height * row_height_threshold
+            indexed_rects = [(i, get_top_left(rect)) for i, rect in enumerate(rectangles)]
+            indexed_rects.sort(key=lambda x: x[1][1])
+            rows = []
+            current_row = []
+            last_y = indexed_rects[0][1][1]
+            for item in indexed_rects:
+                i, (x, y) = item
+                if abs(y - last_y) <= threshold:
+                    current_row.append(item)
+                else:
+                    rows.append(current_row)
+                    current_row = [item]
+                last_y = y
+            if current_row:
+                rows.append(current_row)
+            sorted_rects = []
+            for row in rows:
+                row.sort(key=lambda x: x[1][0])
+                sorted_rects.extend([rectangles[i] for i, _ in row])
+            return sorted_rects
+        # get original elements
+        items = []
+        for i in range(self.BoxList.count()):
+            item = self.BoxList.item(i)  
+            items.append({
+                "text": item.text(),
+                "object": item
+            })
+        # get coordinate points
+        rectangles = []
+        for item in items:
+            text = item["text"]
+            try:
+                rect = ast.literal_eval(text)  # 转为列表
+                rectangles.append(rect)
+            except (IndexError, SyntaxError) as e:
+                print(f"Error parsing text: {text}")
+                continue 
+        #start resort
+        sorted_rectangles = sort_rectangles(rectangles, row_height_threshold=0.5)
+        # old_idx <--> new_idx
+        index_map = []
+        for sorted_rect in sorted_rectangles:
+            for old_idx, rect in enumerate(rectangles):
+                if rect == sorted_rect:
+                    index_map.append(old_idx)
+                    break   
+        # resort BoxList labelList canvas.shapes
+        items = [self.BoxList.takeItem(0) for _ in range(self.BoxList.count())]
+        items_label = [self.labelList.takeItem(0) for _ in range(self.labelList.count())]
+        shapes = self.canvas.shapes
+        self.canvas.shapes = []
+        for new_idx in range(len(index_map)):
+            old_idx = index_map[new_idx]
+            self.BoxList.insertItem(new_idx, items[old_idx])
+            self.labelList.insertItem(new_idx, items_label[old_idx])
+            self.canvas.shapes.insert(new_idx,shapes[old_idx])
+        QMessageBox.information(
+            self,
+            "Information",
+            "resort success!",
+        )
+        
 def inverted(color):
     return QColor(*[255 - v for v in color.getRgb()])
 
