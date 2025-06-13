@@ -385,10 +385,10 @@ class MainWindow(QMainWindow):
         labelListContainer = QWidget()
         labelListContainer.setLayout(listLayout)
         self.labelList.itemSelectionChanged.connect(self.labelSelectionChanged)
-        self.labelList.clicked.connect(self.labelList.item_clicked) 
+        self.labelList.clicked.connect(self.labelList.item_clicked)
 
         # Connect to itemChanged to detect checkbox changes.
-        self.labelList.itemChanged.connect(self.labelItemChanged) 
+        self.labelList.itemChanged.connect(self.labelItemChanged)
         self.labelListDockName = get_str("recognitionResult")
         self.labelListDock = QDockWidget(self.labelListDockName, self)
         self.labelListDock.setWidget(self.labelList)
@@ -426,10 +426,10 @@ class MainWindow(QMainWindow):
         self.BoxList = QListWidget()
 
         # self.BoxList.itemActivated.connect(self.boxSelectionChanged)
-        self.BoxList.itemSelectionChanged.connect(self.boxSelectionChanged)  
-        self.BoxList.itemDoubleClicked.connect(self.editBox)                    
+        self.BoxList.itemSelectionChanged.connect(self.boxSelectionChanged)
+        self.BoxList.itemDoubleClicked.connect(self.editBox)
         # Connect to itemChanged to detect checkbox changes.
-        self.BoxList.itemChanged.connect(self.boxItemChanged) 
+        self.BoxList.itemChanged.connect(self.boxItemChanged)
         self.BoxListDockName = get_str("detectionBoxposition")
         self.BoxListDock = QDockWidget(self.BoxListDockName, self)
         self.BoxListDock.setWidget(self.BoxList)
@@ -1025,7 +1025,7 @@ class MainWindow(QMainWindow):
                 delete,
                 singleRere,
                 cellreRec,
-                resort,  
+                resort,
                 None,
                 undo,
                 undoLastPoint,
@@ -3678,21 +3678,28 @@ class MainWindow(QMainWindow):
             logger.debug("Shape points: %s", shape.points)
             self.updateBoxlist()
             self.setDirty()
-            
+
     def resortBoxposion(self):
         # Sort from top to bottom, left to right
         def sort_rectangles(rectangles, row_height_threshold=0.5):
             if not rectangles:
                 return []
-            
+
             def get_top_left(rect):
                 xs = [p[0] for p in rect]
                 ys = [p[1] for p in rect]
                 return (min(xs), min(ys))
-            
-            avg_height = sum([max(p[1] for p in rect) - min(p[1] for p in rect) for rect in rectangles]) / len(rectangles)
+
+            avg_height = sum(
+                [
+                    max(p[1] for p in rect) - min(p[1] for p in rect)
+                    for rect in rectangles
+                ]
+            ) / len(rectangles)
             threshold = avg_height * row_height_threshold
-            indexed_rects = [(i, get_top_left(rect)) for i, rect in enumerate(rectangles)]
+            indexed_rects = [
+                (i, get_top_left(rect)) for i, rect in enumerate(rectangles)
+            ]
             indexed_rects.sort(key=lambda x: x[1][1])
             rows = []
             current_row = []
@@ -3712,14 +3719,12 @@ class MainWindow(QMainWindow):
                 row.sort(key=lambda x: x[1][0])
                 sorted_rects.extend([rectangles[i] for i, _ in row])
             return sorted_rects
+
         # get original elements
         items = []
         for i in range(self.BoxList.count()):
-            item = self.BoxList.item(i)  
-            items.append({
-                "text": item.text(),
-                "object": item
-            })
+            item = self.BoxList.item(i)
+            items.append({"text": item.text(), "object": item})
         # get coordinate points
         rectangles = []
         for item in items:
@@ -3729,8 +3734,8 @@ class MainWindow(QMainWindow):
                 rectangles.append(rect)
             except (IndexError, SyntaxError) as e:
                 print(f"Error parsing text: {text}")
-                continue 
-        #start resort
+                continue
+        # start resort
         sorted_rectangles = sort_rectangles(rectangles, row_height_threshold=0.5)
         # old_idx <--> new_idx
         index_map = []
@@ -3738,23 +3743,26 @@ class MainWindow(QMainWindow):
             for old_idx, rect in enumerate(rectangles):
                 if rect == sorted_rect:
                     index_map.append(old_idx)
-                    break   
+                    break
         # resort BoxList labelList canvas.shapes
         items = [self.BoxList.takeItem(0) for _ in range(self.BoxList.count())]
-        items_label = [self.labelList.takeItem(0) for _ in range(self.labelList.count())]
+        items_label = [
+            self.labelList.takeItem(0) for _ in range(self.labelList.count())
+        ]
         shapes = self.canvas.shapes
         self.canvas.shapes = []
         for new_idx in range(len(index_map)):
             old_idx = index_map[new_idx]
             self.BoxList.insertItem(new_idx, items[old_idx])
             self.labelList.insertItem(new_idx, items_label[old_idx])
-            self.canvas.shapes.insert(new_idx,shapes[old_idx])
+            self.canvas.shapes.insert(new_idx, shapes[old_idx])
         QMessageBox.information(
             self,
             "Information",
             "resort success!",
         )
-        
+
+
 def inverted(color):
     return QColor(*[255 - v for v in color.getRgb()])
 
