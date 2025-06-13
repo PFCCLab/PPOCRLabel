@@ -184,7 +184,7 @@ class Shape(object):
                         self.label = ""
                     if min_y < MIN_Y_LABEL:
                         min_y += MIN_Y_LABEL
-                    painter.drawText(min_x, min_y, self.label)
+                    painter.drawText(int(min_x), int(min_y), self.label)
 
             # Draw number at the top-right
             if self.paintIdx:
