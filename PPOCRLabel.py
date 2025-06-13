@@ -3378,8 +3378,9 @@ class MainWindow(QMainWindow):
             # TODO the model will be automatically selected based on the language.
             if choose_lang in ["french", "german", "korean"]:
                 self.ocr = PaddleOCR(
-                    use_doc_orientation_classify=True,
-                    use_textline_orientation=True,
+                    use_doc_orientation_classify=False,
+                    use_textline_orientation=False,
+                    use_doc_unwarping=False,
                     lang=choose_lang,
                     device=self.gpu,
                     ocr_version="PP-OCRv3",
@@ -3387,8 +3388,9 @@ class MainWindow(QMainWindow):
                 )
             else:
                 self.ocr = PaddleOCR(
-                    use_doc_orientation_classify=True,
-                    use_textline_orientation=True,
+                    use_doc_orientation_classify=False,
+                    use_textline_orientation=False,
+                    use_doc_unwarping=False,
                     lang=choose_lang,
                     device=self.gpu,
                     enable_mkldnn=False,  # The future will remove
