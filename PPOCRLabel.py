@@ -3375,14 +3375,26 @@ class MainWindow(QMainWindow):
             choose_lang = lg_idx[current_text]
             if hasattr(self, "ocr"):
                 del self.ocr
-            self.ocr = PaddleOCR(
-                use_pdserving=False,
-                use_angle_cls=True,
-                det=True,
-                cls=True,
-                use_gpu=self.gpu,
-                lang=choose_lang,
-            )
+            # TODO the model will be automatically selected based on the language.
+            if choose_lang in ["french", "german", "korean"]:
+                self.ocr = PaddleOCR(
+                    use_doc_orientation_classify=False,
+                    use_textline_orientation=False,
+                    use_doc_unwarping=False,
+                    lang=choose_lang,
+                    device=self.gpu,
+                    ocr_version="PP-OCRv3",
+                    enable_mkldnn=False,  # The future will remove
+                )
+            else:
+                self.ocr = PaddleOCR(
+                    use_doc_orientation_classify=False,
+                    use_textline_orientation=False,
+                    use_doc_unwarping=False,
+                    lang=choose_lang,
+                    device=self.gpu,
+                    enable_mkldnn=False,  # The future will remove
+                )
             if choose_lang in ["ch", "en"]:
                 if hasattr(self, "table_ocr"):
                     del self.table_ocr
@@ -3395,6 +3407,7 @@ class MainWindow(QMainWindow):
                     use_chart_recognition=False,
                     use_region_detection=False,
                     device=self.gpu,
+                    enable_mkldnn=False,  # The future will remove
                 )
         else:
             logger.error("Invalid language selection")
