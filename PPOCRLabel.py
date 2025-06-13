@@ -1725,8 +1725,8 @@ class MainWindow(QMainWindow):
             # print('rm empty label')
             return
         item = self.shapesToItems[shape]
-        label = " ".join(shape.label)
-        item.setText(label)
+        shape.label = " ".join(shape.label)
+        item.setText(shape.label)
         self.updateComboBox()
 
         # ADD:
