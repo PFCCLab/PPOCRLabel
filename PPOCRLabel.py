@@ -1725,7 +1725,8 @@ class MainWindow(QMainWindow):
             # print('rm empty label')
             return
         item = self.shapesToItems[shape]
-        item.setText(shape.label)
+        label = " ".join(shape.label)
+        item.setText(label)
         self.updateComboBox()
 
         # ADD:
@@ -2953,10 +2954,10 @@ class MainWindow(QMainWindow):
                     QMessageBox.information(self, "Information", msg)
                     return
                 result = self.text_recognizer.predict(img_crop)[0]
-                storage = [(result["rec_text"], result["rec_score"])]
-                if result["rec_text"] != "":
+                storage = [(result["rec_texts"], result["rec_scores"])]
+                if result["rec_texts"] != "":
                     if shape.line_color == DEFAULT_LOCK_COLOR:
-                        shape.label = result["rec_text"]
+                        shape.label = result["rec_texts"]
                         storage.insert(0, box)
                         if self.kie_mode:
                             storage.append(kie_cls)
@@ -2969,7 +2970,7 @@ class MainWindow(QMainWindow):
                 else:
                     logger.warning("Can not recognise the box")
                     if shape.line_color == DEFAULT_LOCK_COLOR:
-                        shape.label = result["rec_text"]
+                        shape.label = result["rec_texts"]
                         if self.kie_mode:
                             self.result_dic_locked.append(
                                 [box, (self.noLabelText, 0), kie_cls]
@@ -2986,7 +2987,7 @@ class MainWindow(QMainWindow):
                 try:
                     if (
                         self.noLabelText == shape.label
-                        or result["rec_text"] == shape.label
+                        or result["rec_texts"] == shape.label
                     ):
                         logger.debug("label no change")
                     else:
@@ -3028,17 +3029,17 @@ class MainWindow(QMainWindow):
                 QMessageBox.information(self, "Information", msg)
                 return
             result = self.ocr.predict(img_crop)[0]
-            storage = [(result["rec_text"], result["rec_score"])]
-            if result["rec_text"] != "":
+            storage = [(result["rec_texts"], result["rec_scores"])]
+            if result["rec_texts"] != "":
                 storage.insert(0, box)
-                storage.append(result["rec_text"])
+                storage.append(result["rec_texts"])
                 if self.kie_mode:
                     storage.append(result["key_cls"])
                 logger.debug("result in reRec is %s", result)
-                if result["rec_text"] == shape.label:
+                if result["rec_texts"] == shape.label:
                     logger.debug("label no change")
                 else:
-                    shape.label = result["rec_text"]
+                    shape.label = result["rec_texts"]
             else:
                 logger.warning("Can not recognise the box")
                 if self.noLabelText == shape.label:
@@ -3109,7 +3110,7 @@ class MainWindow(QMainWindow):
             order_index = 0
             for i in range(result_len):
                 bbox = region["table_ocr_pred"]["rec_boxes"][i]
-                rec_text = region["table_ocr_pred"]["rec_texts"][i]
+                rec_texts = region["table_ocr_pred"]["rec_texts"][i]
 
                 rext_bbox = [
                     [bbox[0], bbox[1]],
@@ -3120,7 +3121,7 @@ class MainWindow(QMainWindow):
 
                 # save bbox to shape
                 shape = Shape(
-                    label=rec_text, line_color=DEFAULT_LINE_COLOR, key_cls=None
+                    label=rec_texts, line_color=DEFAULT_LINE_COLOR, key_cls=None
                 )
                 for point in rext_bbox:
                     x, y = point
@@ -3227,12 +3228,12 @@ class MainWindow(QMainWindow):
                 for _bbox in bboxes:
                     patch = get_rotate_crop_image(img_crop, np.array(_bbox, np.float32))
                     rec_res = self.text_recognizer.predict(patch)[0]
-                    text = rec_res["rec_text"]
+                    text = rec_res["rec_texts"]
                     if text != "":
                         texts += text + (
                             "" if text[0].isalpha() else " "
                         )  # add space between english word
-                        probs += rec_res["rec_score"]
+                        probs += rec_res["rec_scores"]
                 probs = probs / len(bboxes)
             result = [(texts.strip(), probs)]
 
