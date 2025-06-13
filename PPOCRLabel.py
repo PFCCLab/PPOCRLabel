@@ -3027,7 +3027,7 @@ class MainWindow(QMainWindow):
                 )
                 QMessageBox.information(self, "Information", msg)
                 return
-            result = self.ocr.predict(img_crop)[0]
+            result = self.text_recognizer.predict(img_crop)[0]
             storage = [(result["rec_text"], result["rec_score"])]
             if result["rec_text"] != "":
                 storage.insert(0, box)
