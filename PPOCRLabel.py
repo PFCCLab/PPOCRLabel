@@ -3033,7 +3033,7 @@ class MainWindow(QMainWindow):
                 storage.insert(0, box)
                 storage.append(result["rec_text"])
                 if self.kie_mode:
-                    storage.append(result["key_cls"])
+                    storage.append(shape.key_cls)
                 logger.debug("result in reRec is %s", result)
                 if result["rec_text"] == shape.label:
                     logger.debug("label no change")
