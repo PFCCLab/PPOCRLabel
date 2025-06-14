@@ -902,7 +902,7 @@ class MainWindow(QMainWindow):
         )
         resort = action(
             get_str("resortposition"),
-            self.resortBoxposion,
+            self.resortBoxPosion,
             "Ctrl+B",
             "resort",
             get_str("resortpositiondetail"),
@@ -3679,47 +3679,41 @@ class MainWindow(QMainWindow):
             self.updateBoxlist()
             self.setDirty()
 
-    def resortBoxposion(self):
-        # Sort from top to bottom, left to right
-        def sort_rectangles(rectangles, row_height_threshold=0.5):
-            if not rectangles:
-                return []
+    def sort_rectangles(self, rectangles, row_height_threshold=0.5):
+        if not rectangles:
+            return []
 
-            def get_top_left(rect):
-                xs = [p[0] for p in rect]
-                ys = [p[1] for p in rect]
-                return (min(xs), min(ys))
+        def get_top_left(rect):
+            xs = [p[0] for p in rect]
+            ys = [p[1] for p in rect]
+            return (min(xs), min(ys))
 
-            avg_height = sum(
-                [
-                    max(p[1] for p in rect) - min(p[1] for p in rect)
-                    for rect in rectangles
-                ]
-            ) / len(rectangles)
-            threshold = avg_height * row_height_threshold
-            indexed_rects = [
-                (i, get_top_left(rect)) for i, rect in enumerate(rectangles)
-            ]
-            indexed_rects.sort(key=lambda x: x[1][1])
-            rows = []
-            current_row = []
-            last_y = indexed_rects[0][1][1]
-            for item in indexed_rects:
-                i, (x, y) = item
-                if abs(y - last_y) <= threshold:
-                    current_row.append(item)
-                else:
-                    rows.append(current_row)
-                    current_row = [item]
-                last_y = y
-            if current_row:
+        avg_height = sum(
+            [max(p[1] for p in rect) - min(p[1] for p in rect) for rect in rectangles]
+        ) / len(rectangles)
+        threshold = avg_height * row_height_threshold
+        indexed_rects = [(i, get_top_left(rect)) for i, rect in enumerate(rectangles)]
+        indexed_rects.sort(key=lambda x: x[1][1])
+        rows = []
+        current_row = []
+        last_y = indexed_rects[0][1][1]
+        for item in indexed_rects:
+            i, (x, y) = item
+            if abs(y - last_y) <= threshold:
+                current_row.append(item)
+            else:
                 rows.append(current_row)
-            sorted_rects = []
-            for row in rows:
-                row.sort(key=lambda x: x[1][0])
-                sorted_rects.extend([rectangles[i] for i, _ in row])
-            return sorted_rects
+                current_row = [item]
+            last_y = y
+        if current_row:
+            rows.append(current_row)
+        sorted_rects = []
+        for row in rows:
+            row.sort(key=lambda x: x[1][0])
+            sorted_rects.extend([rectangles[i] for i, _ in row])
+        return sorted_rects
 
+    def resortBoxPosion(self):
         # get original elements
         items = []
         for i in range(self.BoxList.count()):
@@ -3732,11 +3726,11 @@ class MainWindow(QMainWindow):
             try:
                 rect = ast.literal_eval(text)  # 转为列表
                 rectangles.append(rect)
-            except (IndexError, SyntaxError) as e:
-                print(f"Error parsing text: {text}")
+            except (ValueError, SyntaxError) as e:
+                logger.error(f"Error parsing text: {text}")
                 continue
         # start resort
-        sorted_rectangles = sort_rectangles(rectangles, row_height_threshold=0.5)
+        sorted_rectangles = self.sort_rectangles(rectangles, row_height_threshold=0.5)
         # old_idx <--> new_idx
         index_map = []
         for sorted_rect in sorted_rectangles:
