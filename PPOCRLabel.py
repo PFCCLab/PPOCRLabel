@@ -902,7 +902,7 @@ class MainWindow(QMainWindow):
         )
         resort = action(
             get_str("resortposition"),
-            self.resortBoxPosion,
+            self.resortBoxPosition,
             "Ctrl+B",
             "resort",
             get_str("resortpositiondetail"),
@@ -3713,7 +3713,7 @@ class MainWindow(QMainWindow):
             sorted_rects.extend([rectangles[i] for i, _ in row])
         return sorted_rects
 
-    def resortBoxPosion(self):
+    def resortBoxPosition(self):
         # get original elements
         items = []
         for i in range(self.BoxList.count()):
