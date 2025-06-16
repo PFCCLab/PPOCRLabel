@@ -236,19 +236,19 @@ PPOCRLabel.exe --lang ch
  from paddleocr import PaddleOCR, PPStructureV3
 
  ocr = PaddleOCR(
-  text_detection_model_name='{your_det_model_name}',
-  text_detection_model_dir='{your_det_model_dir}',
-  text_recognition_model_name='{your_rec_model_name}',
-  text_recognition_model_dir='{your_rec_model_dir}',  
+  text_detection_model_name='{your_text_det_model_name}',
+  text_detection_model_dir='{your_text_det_model_dir}',
+  text_recognition_model_name='{your_text_rec_model_name}',
+  text_recognition_model_dir='{your_text_rec_model_dir}',  
 )
 
 table_ocr = PPStructureV3(
-  layout_detection_model_name='{your_det_model_name}',
-  layout_detection_model_dir='{your_det_model_dir}',
-  chart_recognition_model_name='{your_rec_model_name}',
-  chart_recognition_model_dir='{your_rec_model_name}',
-  region_detection_model_name='{your_det_model_name}',
-  region_detection_model_dir='{your_det_model_name}',
+  layout_detection_model_name='{your_layout_det_model_name}',
+  layout_detection_model_dir='{your_layout_det_model_dir}',
+  chart_recognition_model_name='{your_chart_rec_model_name}',
+  chart_recognition_model_dir='{your_chart_rec_model_dir}',
+  region_detection_model_name='{your_region_det_model_name}',
+  region_detection_model_dir='{your_region_det_model_dir}',
   # 其他模型详细替换见下方PPStructure类的实例化，将模型路径更换为自己的推理模型路径即可。
 )
  ```
