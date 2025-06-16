@@ -259,20 +259,20 @@ labeling in the Excel file, the recommended steps are:
 - **Custom Model**: If users want to replace the built-in model with their own inference model. Through the following code example:
  ```
  from paddleocr import PaddleOCR, PPStructureV3
- ocr = PaddleOCR(
-  text_detection_model_name='{your_det_model_name}',
-  text_detection_model_dir='{your_det_model_dir}',
-  text_recognition_model_name='{your_rec_model_name}',
-  text_recognition_model_dir='{your_rec_model_dir}',  
+  ocr = PaddleOCR(
+  text_detection_model_name='{your_text_det_model_name}',
+  text_detection_model_dir='{your_text_det_model_dir}',
+  text_recognition_model_name='{your_text_rec_model_name}',
+  text_recognition_model_dir='{your_text_rec_model_dir}',  
 )
 
 table_ocr = PPStructureV3(
-  layout_detection_model_name='{your_det_model_name}',
-  layout_detection_model_dir='{your_det_model_dir}',
-  chart_recognition_model_name='{your_rec_model_name}',
-  chart_recognition_model_dir='{your_rec_model_name}',
-  region_detection_model_name='{your_det_model_name}',
-  region_detection_model_dir='{your_det_model_name}',
+  layout_detection_model_name='{your_layout_det_model_name}',
+  layout_detection_model_dir='{your_layout_det_model_dir}',
+  chart_recognition_model_name='{your_chart_rec_model_name}',
+  chart_recognition_model_dir='{your_chart_rec_model_dir}',
+  region_detection_model_name='{your_region_det_model_name}',
+  region_detection_model_dir='{your_region_det_model_dir}',
   # For detailed replacement of other models, refer to the instantiation of the PPStructure class below. Simply replace the model path with the path to your own inference model.
 )
  ```
