@@ -1,12 +1,12 @@
 English | [简体中文](README_ch.md)
 
-# PPOCRLabelv2
+# PPOCRLabelv3
 
 [![PyPI - Version](https://img.shields.io/pypi/v/PPOCRLabel)](https://pypi.org/project/PPOCRLabel/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
 [![Downloads](https://static.pepy.tech/badge/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
 
-PPOCRLabelv2 is a semi-automatic graphic annotation tool suitable for OCR field, with built-in PP-OCR model to automatically detect and re-recognize data. It is written in Python3 and PyQT5, supporting rectangular box, table, irregular text and key information annotation modes. Annotations can be directly used for the training of PP-OCR detection and recognition models.
+PPOCRLabelv3 is a semi-automatic graphic annotation tool suitable for OCR field, with built-in PP-OCR model to automatically detect and re-recognize data. It is written in Python3 and PyQT5, supporting rectangular box, table, irregular text and key information annotation modes. Annotations can be directly used for the training of PP-OCR detection and recognition models.
 
 |               regular text annotation               |                table annotation                |
 | :-------------------------------------------------: | :--------------------------------------------: |
@@ -15,12 +15,13 @@ PPOCRLabelv2 is a semi-automatic graphic annotation tool suitable for OCR field,
 | <img src="./data/gif/multi-point.gif" width="80%"/> |  <img src="./data/gif/kie.gif" width="100%"/>  |
 
 ### Recent Update
-
+- 2025.06:
+  - Add the `Resort Bounding Box Positions` features. For usage details, please refer to the `11. Additional Feature Description` in the `2.1 Operational Steps` section below.
 - 2024.11:
   - Add the `label_font_path` parameter to change the font of the label.
   - Add the `selected_shape_color` parameter to change the color of the selected label box and font.
 - 2024.09:
-  - Added `Re-recognition` and `Auto Save Unsaved changes` features. For usage details, please refer to the "11. Additional Feature Description" in the "2.1 Operational Steps" section below.
+  - Added `Re-recognition` and `Auto Save Unsaved changes` features. For usage details, please refer to the `11. Additional Feature Description` in the `2.1 Operational Steps` section below.
   - Added the parameter `--img_list_natural_sort`, which defaults to natural sorting for the left image list. After configuring this parameter, character sorting will be used to easily locate images based on character order.
   - Add 4 custom model parameters:
     - `det_model_dir`: Path to the detection model directory
@@ -58,7 +59,7 @@ PPOCRLabelv2 is a semi-automatic graphic annotation tool suitable for OCR field,
 pip3 install --upgrade pip
 
 # If you only have cpu on your machine, please run the following command to install
-python3 -m pip install paddlepaddle
+python3 -m pip install paddlepaddle -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
 ```
 
 For more software version requirements, please refer to the instructions in [Installation Document](https://www.paddlepaddle.org.cn/install/quick) for operation.
@@ -89,6 +90,7 @@ PPOCRLabel --kie True # [KIE mode] for [detection + recognition + keyword extrac
 ```bash
 pip3 install PPOCRLabel
 pip3 install trash-cli
+export QT_QPA_PLATFORM=wayland # Consider adding it to the system environment variables to avoid entering it multiple times.
 
 # Select label mode and run
 PPOCRLabel  # [Normal mode] for [detection + recognition] labeling
@@ -179,6 +181,7 @@ PPOCRLabel.exe --lang ch
       - `c`: After pressing, the up, down, left, and right arrow keys will move the 3rd vertex individually.
       - `v`: After pressing, the up, down, left, and right arrow keys will move the 4th vertex individually.
       - `b`: After pressing, the up, down, left, and right arrow keys will revert to the default action of moving the entire bounding box.
+    - `Bottom right` -> `Resort Positions`: Clicking this will arrange the bounding boxes in order from top to bottom and left to right. This is used to address the issue of manually adjusting the order after adding rectangular labels when identifying table structures.
 
 ### 2.2 Table Annotation
 
@@ -234,6 +237,7 @@ labeling in the Excel file, the recommended steps are:
 | Ctrl + X                 | Change key class of the box when enable `--kie`  |
 | Ctrl + R                 | Re-recognize the selected box                    |
 | Ctrl + C                 | Copy and paste the selected box                  |
+| Ctrl + B                 | Resort Bounding Box Positions |
 | Ctrl + Left Mouse Button | Multi select the label box                       |
 | Backspace or Delete      | Delete the selected box                          |
 | Ctrl + V  or End         | Check image                                      |
@@ -250,11 +254,29 @@ labeling in the Excel file, the recommended steps are:
 - Default model: PPOCRLabel uses the Chinese and English ultra-lightweight OCR model in PaddleOCR by default, supports Chinese, English and number recognition, and multiple language detection.
 
 - Model language switching: Changing the built-in model language is supportable by clicking "PaddleOCR"-"Choose OCR Model" in the menu bar. Currently supported languages​include French, German, Korean, and Japanese.
-  For specific model download links, please refer to [PaddleOCR Model List](https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/doc/doc_en/models_list_en.md)
+  For specific model download links, please refer to [PaddleOCR Model List](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/docs/version3.x/model_list.md).
 
-- **Custom Model**: If users want to replace the built-in model with their own inference model, they can follow the [Custom Model Code Usage](https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/doc/doc_en/whl_en.md#31-use-by-code) by modifying PPOCRLabel.py for [Instantiation of PaddleOCR class](https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/PPOCRLabel/PPOCRLabel.py#L97) :
+- **Custom Model**: If users want to replace the built-in model with their own inference model. Through the following code example:
+ ```
+ from paddleocr import PaddleOCR, PPStructureV3
+ ocr = PaddleOCR(
+  text_detection_model_name='{your_det_model_name}',
+  text_detection_model_dir='{your_det_model_dir}',
+  text_recognition_model_name='{your_rec_model_name}',
+  text_recognition_model_dir='{your_rec_model_dir}',  
+)
 
-  add parameter `det_model_dir`  in `self.ocr = PaddleOCR(use_pdserving=False, use_angle_cls=True, det=True, cls=True, use_gpu=gpu, lang=lang) `
+table_ocr = PPStructureV3(
+  layout_detection_model_name='{your_det_model_name}',
+  layout_detection_model_dir='{your_det_model_dir}',
+  chart_recognition_model_name='{your_rec_model_name}',
+  chart_recognition_model_dir='{your_rec_model_name}',
+  region_detection_model_name='{your_det_model_name}',
+  region_detection_model_dir='{your_det_model_name}',
+  # For detailed replacement of other models, refer to the instantiation of the PPStructure class below. Simply replace the model path with the path to your own inference model.
+)
+ ```
+ By modifying PPOCRLabel.py for [Instantiation of PaddleOCR class](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/paddleocr/_pipelines/ocr.py#L55) or [Instantiation of PaddleOCR class](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/paddleocr/_pipelines/pp_structurev3.py#L25). For example, to specify a detection model, use the following: self.ocr = PaddleOCR(use_doc_orientation_classify=False, use_textline_orientation=False, use_doc_unwarping=False, device=gpu, lang=lang). Add the parameters text_detection_model_name and text_detection_model_dir, and pass in your own model path.
 
 ### 3.3 Export Label Result
 
@@ -305,6 +327,18 @@ PPOCRLabel supports three ways to export Label.txt
 
     ```
     pip install opencv-python==4.2.0.32
+    ```
+- For Linux users: If you encounter the error starting with ```qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found. ```while opening a software, follow these steps:
+    ```
+    pip uninstall opencv-python
+    pip uninstall opencv-contrib-python
+    pip install opencv-python-headless
+    export QT_QPA_PLATFORM=wayland
+    ```
+- For Windows users: If you encounter the error ```No python win32com. Error: No module named 'win32com'``` while using table recognition, you can install the required modules by running the following commands:
+    ```
+    pip install premailer
+    pip install pywin32
     ```
 - If you get an error starting with **Missing string id **,you need to recompile resources:
     ```

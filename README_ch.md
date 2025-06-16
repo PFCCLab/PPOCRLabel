@@ -1,12 +1,12 @@
 [English](README.md) | 简体中文
 
-# PPOCRLabelv2
+# PPOCRLabelv3
 
 [![PyPI - Version](https://img.shields.io/pypi/v/PPOCRLabel)](https://pypi.org/project/PPOCRLabel/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
 [![Downloads](https://static.pepy.tech/badge/PPOCRLabel)](https://github.com/PFCCLab/PPOCRLabel)
 
-PPOCRLabel是一款适用于OCR领域的半自动化图形标注工具，内置PP-OCR模型对数据自动标注和重新识别。使用Python3和PyQT5编写，支持矩形框标注、表格标注、不规则文本标注、关键信息标注模式，导出格式可直接用于PaddleOCR检测和识别模型的训练。
+PPOCRLabelv3是一款适用于OCR领域的半自动化图形标注工具，内置PP-OCR模型对数据自动标注和重新识别。使用Python3和PyQT5编写，支持矩形框标注、表格标注、不规则文本标注、关键信息标注模式，导出格式可直接用于PaddleOCR检测和识别模型的训练。
 
 |                      常规标注                       |                    表格标注                    |
 | :-------------------------------------------------: | :--------------------------------------------: |
@@ -15,7 +15,8 @@ PPOCRLabel是一款适用于OCR领域的半自动化图形标注工具，内置P
 | <img src="./data/gif/multi-point.gif" width="80%"/> |  <img src="./data/gif/kie.gif" width="100%"/>  |
 
 #### 近期更新
-
+- 2025.06:
+  - 新增`重新排序坐标框位置`功能，使用方法详见下方`2.1 操作步骤`的`11. 补充功能说明`。
 - 2024.11:
   - 新增`label_font_path`参数，用来改变标签字体
   - 新增`selected_shape_color`参数，用来改变选中标签框和字体颜色
@@ -62,7 +63,7 @@ PPOCRLabel是一款适用于OCR领域的半自动化图形标注工具，内置P
 pip3 install --upgrade pip
 
 # 如果您的机器是CPU，请运行以下命令安装
-python3 -m pip install paddlepaddle -i https://pypi.tuna.tsinghua.edu.cn/simple
+python3 -m pip install paddlepaddle -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
 ```
 
 更多的版本需求，请参照[安装文档](https://www.paddlepaddle.org.cn/install/quick)中的说明进行操作。
@@ -88,7 +89,7 @@ PPOCRLabel --lang ch --kie True  # 启动 【KIE 模式】，用于打【检测+
 ```bash
 pip3 install PPOCRLabel
 pip3 install trash-cli
-
+export QT_QPA_PALTFORM = wayland # 可以考虑添加到系统环境变量中，避免多次输入
 # 选择标签模式来启动
 PPOCRLabel --lang ch  # 启动【普通模式】，用于打【检测+识别】场景的标签
 PPOCRLabel --lang ch --kie True  # 启动 【KIE 模式】，用于打【检测+识别+关键字提取】场景的标签
@@ -163,6 +164,7 @@ PPOCRLabel.exe --lang ch
       - `c` ：按下后，此时使用键盘的上下左右按键将单独移动第3个顶点
       - `v` ：按下后，此时使用键盘的上下左右按键将单独移动第4个顶点
       - `b` ：按下后，此时使用键盘的上下左右按键将恢复默认的整体移动整个标记框
+    - `右下方` -> `重新排序位置` : 点击后会将标注框按照从上到下、从左到右的顺序进行排列。用于解决表格结构标识时，需要手动补充矩形标识后的顺序调整问题。
 
 ### 2.2 表格标注（[视频演示](https://www.bilibili.com/video/BV1wR4y1v7JE/?share_source=copy_web&vd_source=cf1f9d24648d49636e3d109c9f9a377d&t=1998)）
 
@@ -211,6 +213,7 @@ PPOCRLabel.exe --lang ch
 | Ctrl + X         |  `--kie` 模式下，修改 Box 的关键字种类 |
 | Ctrl + R         | 重新识别所选标记                        |
 | Ctrl + C         | 【复制并粘贴】选中的标记框                     |
+| Ctrl + B         | 重新排序坐标框位置                     |
 | Ctrl + 鼠标左键    | 多选标记框                           |
 | Backspace 或 Delete    | 删除所选框                           |
 | Ctrl + V 或 End        | 确认本张图片标记                        |
@@ -226,9 +229,30 @@ PPOCRLabel.exe --lang ch
 
  - 默认模型：PPOCRLabel默认使用PaddleOCR中的中英文超轻量OCR模型，支持中英文与数字识别，多种语言检测。
 
- - 模型语言切换：用户可通过菜单栏中 "PaddleOCR" - "选择模型" 切换内置模型语言，目前支持的语言包括法文、德文、韩文、日文。具体模型下载链接可参考[PaddleOCR模型列表](https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/doc/doc_ch/models_list.md).
+ - 模型语言切换：用户可通过菜单栏中 "PaddleOCR" - "选择模型" 切换内置模型语言，目前支持的语言包括法文、德文、韩文、日文。具体模型下载链接可参考[PaddleOCR模型列表](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/docs/version3.x/model_list.md).
 
- - **自定义模型**：如果用户想将内置模型更换为自己的推理模型，可根据[自定义模型代码使用](https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/doc/doc_ch/whl.md#3-%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A8%A1%E5%9E%8B)，通过修改PPOCRLabel.py中针对[PaddleOCR类的实例化](https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/PPOCRLabel/PPOCRLabel.py#L97) 或者[PPStructure](https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/PPOCRLabel/PPOCRLabel.py#L104)实现，例如指定检测模型：`self.ocr = PaddleOCR(det=True, cls=True, use_gpu=gpu, lang=lang) `，在 `det_model_dir` 中传入自己的模型即可。
+ - **自定义模型**：如果用户想将内置模型更换为自己的推理模型，通过以下代码示例。
+ ```
+ from paddleocr import PaddleOCR, PPStructureV3
+
+ ocr = PaddleOCR(
+  text_detection_model_name='{your_det_model_name}',
+  text_detection_model_dir='{your_det_model_dir}',
+  text_recognition_model_name='{your_rec_model_name}',
+  text_recognition_model_dir='{your_rec_model_dir}',  
+)
+
+table_ocr = PPStructureV3(
+  layout_detection_model_name='{your_det_model_name}',
+  layout_detection_model_dir='{your_det_model_dir}',
+  chart_recognition_model_name='{your_rec_model_name}',
+  chart_recognition_model_dir='{your_rec_model_name}',
+  region_detection_model_name='{your_det_model_name}',
+  region_detection_model_dir='{your_det_model_name}',
+  # 其他模型详细替换见下方PPStructure类的实例化，将模型路径更换为自己的推理模型路径即可。
+)
+ ```
+ 通过修改PPOCRLabel.py中针对[PaddleOCR类的实例化](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/paddleocr/_pipelines/ocr.py#L55) 或者[PPStructure类的实例化](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/paddleocr/_pipelines/pp_structurev3.py#L25)实现，例如指定检测模型：`self.ocr = PaddleOCR(use_doc_orientation_classify=False, use_textline_orientation=False, use_doc_unwarping=False, device=gpu, lang=lang) `，添加参数 `text_detection_model_name`和`text_detection_model_dir` ，传入自己的模型路径即可。
 
 ### 3.3 导出标记结果
 
@@ -281,7 +305,18 @@ python gen_ocr_train_val_test.py --trainValTestRatio 6:2:2 --datasetRootPath ../
     ```
     pip install opencv-python==4.2.0.32
     ```
-
+- 针对Linux用户：如果您在打开软件过程中出现``` qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found.``` 开头的错误。
+    ```
+    pip uninstall opencv-python
+    pip uninstall opencv-contrib-python
+    pip install opencv-python-headless
+    export QT_QPA_PLATFORM=wayland
+    ```
+- 针对Windows用户：如果您在使用表格识别时出现``` No python win32com. Error: No module named 'win32com'``` 错误。
+    ```
+    pip install premailer
+    pip install pywin32
+    ```
 - 如果出现 ```Missing string id``` 开头的错误，需要重新编译资源：
     ```
     pyrcc5 -o libs/resources.py resources.qrc
