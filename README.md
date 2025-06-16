@@ -254,11 +254,29 @@ labeling in the Excel file, the recommended steps are:
 - Default model: PPOCRLabel uses the Chinese and English ultra-lightweight OCR model in PaddleOCR by default, supports Chinese, English and number recognition, and multiple language detection.
 
 - Model language switching: Changing the built-in model language is supportable by clicking "PaddleOCR"-"Choose OCR Model" in the menu bar. Currently supported languages​include French, German, Korean, and Japanese.
-  For specific model download links, please refer to [PaddleOCR Model List](https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/doc/doc_en/models_list_en.md)
+  For specific model download links, please refer to [PaddleOCR Model List](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/docs/version3.x/model_list.md).
 
-- **Custom Model**: If users want to replace the built-in model with their own inference model, they can follow the [Custom Model Code Usage](https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/doc/doc_en/whl_en.md#31-use-by-code) by modifying PPOCRLabel.py for [Instantiation of PaddleOCR class](https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/PPOCRLabel/PPOCRLabel.py#L97) :
+- **Custom Model**: If users want to replace the built-in model with their own inference model. Through the following code example:
+ ```
+ from paddleocr import PaddleOCR, PPStructureV3
+ ocr = PaddleOCR(
+  text_detection_model_name='{your_det_model_name}',
+  text_detection_model_dir='{your_det_model_dir}',
+  text_recognition_model_name='{your_rec_model_name}',
+  text_recognition_model_dir='{your_rec_model_dir}',  
+)
 
-  add parameter `det_model_dir`  in `self.ocr = PaddleOCR(use_doc_orientation_classify=False, use_textline_orientation=False, use_doc_unwarping=False, device=gpu, lang=lang) `
+table_ocr = PPStructureV3(
+  layout_detection_model_name='{your_det_model_name}',
+  layout_detection_model_dir='{your_det_model_dir}',
+  chart_recognition_model_name='{your_rec_model_name}',
+  chart_recognition_model_dir='{your_rec_model_name}',
+  region_detection_model_name='{your_det_model_name}',
+  region_detection_model_dir='{your_det_model_name}',
+  # For detailed replacement of other models, refer to the instantiation of the PPStructure class below. Simply replace the model path with the path to your own inference model.
+)
+ ```
+ By modifying PPOCRLabel.py for [Instantiation of PaddleOCR class](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/paddleocr/_pipelines/ocr.py#L55) or [Instantiation of PaddleOCR class](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/paddleocr/_pipelines/pp_structurev3.py#L25). For example, to specify a detection model, use the following: self.ocr = PaddleOCR(use_doc_orientation_classify=False, use_textline_orientation=False, use_doc_unwarping=False, device=gpu, lang=lang). Add the parameters text_detection_model_name and text_detection_model_dir, and pass in your own model path.
 
 ### 3.3 Export Label Result
 
@@ -309,6 +327,18 @@ PPOCRLabel supports three ways to export Label.txt
 
     ```
     pip install opencv-python==4.2.0.32
+    ```
+- For Linux users: If you encounter the error starting with ```qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found. ```while opening a software, follow these steps:
+    ```
+    pip uninstall opencv-python
+    pip uninstall opencv-contrib-python
+    pip install opencv-python-headless
+    export QT_QPA_PLATFORM=wayland
+    ```
+- For Windows users: If you encounter the error ```No python win32com. Error: No module named 'win32com'``` while using table recognition, you can install the required modules by running the following commands:
+    ```
+    pip install premailer
+    pip install pywin32
     ```
 - If you get an error starting with **Missing string id **,you need to recompile resources:
     ```
