@@ -214,13 +214,11 @@ class MainWindow(QMainWindow):
             model_name="PP-OCRv5_server_rec",
             model_dir=rec_model_dir,
             device=self.gpu,
-            enable_mkldnn=False,
         )
         self.text_detector = TextDetection(
             model_name="PP-OCRv5_server_det",
             model_dir=det_model_dir,
             device=self.gpu,
-            enable_mkldnn=False,
         )
         self.table_ocr = PPStructureV3(
             use_doc_orientation_classify=False,
@@ -231,7 +229,6 @@ class MainWindow(QMainWindow):
             use_chart_recognition=False,
             use_region_detection=False,
             device=self.gpu,
-            enable_mkldnn=False,
         )
 
         if os.path.exists("./data/paddle.png"):
@@ -3389,25 +3386,12 @@ class MainWindow(QMainWindow):
             choose_lang = lg_idx[current_text]
             if hasattr(self, "ocr"):
                 del self.ocr
-            # TODO the model will be automatically selected based on the language.
-            if choose_lang in ["french", "german", "korean"]:
                 self.ocr = PaddleOCR(
                     use_doc_orientation_classify=False,
                     use_textline_orientation=False,
                     use_doc_unwarping=False,
                     lang=choose_lang,
                     device=self.gpu,
-                    ocr_version="PP-OCRv3",
-                    enable_mkldnn=False,  # The future will remove
-                )
-            else:
-                self.ocr = PaddleOCR(
-                    use_doc_orientation_classify=False,
-                    use_textline_orientation=False,
-                    use_doc_unwarping=False,
-                    lang=choose_lang,
-                    device=self.gpu,
-                    enable_mkldnn=False,  # The future will remove
                 )
             if choose_lang in ["ch", "en"]:
                 if hasattr(self, "table_ocr"):
@@ -3421,7 +3405,6 @@ class MainWindow(QMainWindow):
                     use_chart_recognition=False,
                     use_region_detection=False,
                     device=self.gpu,
-                    enable_mkldnn=False,  # The future will remove
                 )
         else:
             logger.error("Invalid language selection")
