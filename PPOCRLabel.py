@@ -23,10 +23,9 @@ import subprocess
 import sys
 from functools import partial
 
-import openpyxl
 import cv2
 import numpy as np
-
+import openpyxl
 from PyQt5.QtCore import (
     QSize,
     Qt,
@@ -75,8 +74,6 @@ from PyQt5.QtWidgets import (
 )
 
 __dir__ = os.path.dirname(__file__)
-
-from pandas.io.sql import has_table
 
 sys.path.append(os.path.join(__dir__, ""))
 
@@ -191,6 +188,8 @@ class MainWindow(QMainWindow):
 
         self.defaultSaveDir = default_save_dir
 
+        self.fileStatepath = None
+
         params = {
             "use_doc_orientation_classify": False,
             "use_doc_unwarping": False,
@@ -275,20 +274,20 @@ class MainWindow(QMainWindow):
 
         #  ================== File List  ==================
 
-        filelistLayout = QVBoxLayout()
-        filelistLayout.setContentsMargins(0, 0, 0, 0)
+        filelist_layout = QVBoxLayout()
+        filelist_layout.setContentsMargins(0, 0, 0, 0)
 
         self.fileListWidget = QListWidget()
         self.fileListWidget.itemClicked.connect(self.fileitemDoubleClicked)
         self.fileListWidget.setIconSize(QSize(25, 25))
-        filelistLayout.addWidget(self.fileListWidget)
+        filelist_layout.addWidget(self.fileListWidget)
 
-        fileListContainer = QWidget()
-        fileListContainer.setLayout(filelistLayout)
+        file_list_container = QWidget()
+        file_list_container.setLayout(filelist_layout)
         self.fileListName = get_str("fileList")
         self.fileDock = QDockWidget(self.fileListName, self)
         self.fileDock.setObjectName(get_str("files"))
-        self.fileDock.setWidget(fileListContainer)
+        self.fileDock.setWidget(file_list_container)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.fileDock)
 
         #  ================== Key List  ==================
@@ -305,7 +304,7 @@ class MainWindow(QMainWindow):
             self.keyListDock = QDockWidget(self.keyListDockName, self)
             self.keyListDock.setWidget(self.keyList)
             self.keyListDock.setFeatures(QDockWidget.NoDockWidgetFeatures)
-            filelistLayout.addWidget(self.keyListDock)
+            filelist_layout.addWidget(self.keyListDock)
 
         self.auto_recognition_num = 1
 
@@ -316,17 +315,17 @@ class MainWindow(QMainWindow):
         self.AutoRecognition = QToolButton()
         self.AutoRecognition.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.AutoRecognition.setIcon(newIcon("Auto"))
-        autoRecLayout = QHBoxLayout()
-        autoRecLayout.setContentsMargins(0, 0, 0, 0)
-        autoRecLayout.addWidget(self.AutoRecognitionNum)
-        autoRecLayout.addWidget(self.AutoRecognition)
-        autoRecContainer = QWidget()
-        autoRecContainer.setLayout(autoRecLayout)
-        filelistLayout.addWidget(autoRecContainer)
+        auto_rec_layout = QHBoxLayout()
+        auto_rec_layout.setContentsMargins(0, 0, 0, 0)
+        auto_rec_layout.addWidget(self.AutoRecognitionNum)
+        auto_rec_layout.addWidget(self.AutoRecognition)
+        auto_rec_container = QWidget()
+        auto_rec_container.setLayout(auto_rec_layout)
+        filelist_layout.addWidget(auto_rec_container)
 
         #  ================== Right Area  ==================
-        listLayout = QVBoxLayout()
-        listLayout.setContentsMargins(0, 0, 0, 0)
+        list_layout = QVBoxLayout()
+        list_layout.setContentsMargins(0, 0, 0, 0)
 
         # Buttons
         self.editButton = QToolButton()
@@ -349,18 +348,18 @@ class MainWindow(QMainWindow):
         self.ResortButton = QToolButton()
         self.ResortButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
-        leftTopToolBox = QGridLayout()
-        leftTopToolBox.addWidget(self.newButton, 0, 0, 1, 1)
-        leftTopToolBox.addWidget(self.createpolyButton, 0, 1, 1, 1)
-        leftTopToolBox.addWidget(self.reRecogButton, 1, 0, 1, 1)
-        leftTopToolBox.addWidget(self.tableRecButton, 1, 1, 1, 1)
+        left_top_tool_box = QGridLayout()
+        left_top_tool_box.addWidget(self.newButton, 0, 0, 1, 1)
+        left_top_tool_box.addWidget(self.createpolyButton, 0, 1, 1, 1)
+        left_top_tool_box.addWidget(self.reRecogButton, 1, 0, 1, 1)
+        left_top_tool_box.addWidget(self.tableRecButton, 1, 1, 1, 1)
 
-        leftTopToolBoxContainer = QWidget()
-        leftTopToolBoxContainer.setLayout(leftTopToolBox)
-        listLayout.addWidget(leftTopToolBoxContainer)
+        left_top_tool_box_container = QWidget()
+        left_top_tool_box_container.setLayout(left_top_tool_box)
+        list_layout.addWidget(left_top_tool_box_container)
 
         #  ================== Label List  ==================
-        labelIndexListlBox = QHBoxLayout()
+        label_index_list_box = QHBoxLayout()
 
         # Create and add a widget for showing current label item index
         self.indexList = QListWidget()
@@ -373,14 +372,14 @@ class MainWindow(QMainWindow):
         self.indexListDock = QDockWidget("No.", self)
         self.indexListDock.setWidget(self.indexList)
         self.indexListDock.setFeatures(QDockWidget.NoDockWidgetFeatures)
-        labelIndexListlBox.addWidget(self.indexListDock, 1)
+        label_index_list_box.addWidget(self.indexListDock, 1)
         # no margin between two boxes
-        labelIndexListlBox.setSpacing(0)
+        label_index_list_box.setSpacing(0)
 
         # Create and add a widget for showing current label items
         self.labelList = EditInList()
-        labelListContainer = QWidget()
-        labelListContainer.setLayout(listLayout)
+        label_list_container = QWidget()
+        label_list_container.setLayout(list_layout)
         self.labelList.itemSelectionChanged.connect(self.labelSelectionChanged)
         self.labelList.clicked.connect(self.labelList.item_clicked)
 
@@ -390,7 +389,7 @@ class MainWindow(QMainWindow):
         self.labelListDock = QDockWidget(self.labelListDockName, self)
         self.labelListDock.setWidget(self.labelList)
         self.labelListDock.setFeatures(QDockWidget.NoDockWidgetFeatures)
-        labelIndexListlBox.addWidget(
+        label_index_list_box.addWidget(
             self.labelListDock, 10
         )  # label list is wider than index list
 
@@ -408,9 +407,9 @@ class MainWindow(QMainWindow):
         # Trigger drop event
         self.labelList.model().rowsMoved.connect(self.drag_drop_happened)
 
-        labelIndexListContainer = QWidget()
-        labelIndexListContainer.setLayout(labelIndexListlBox)
-        listLayout.addWidget(labelIndexListContainer)
+        label_index_list_container = QWidget()
+        label_index_list_container.setLayout(label_index_list_box)
+        list_layout.addWidget(label_index_list_container)
 
         # Synchronize scrolling between labelList and indexList
         self.labelListBar = self.labelList.verticalScrollBar()
@@ -431,7 +430,7 @@ class MainWindow(QMainWindow):
         self.BoxListDock = QDockWidget(self.BoxListDockName, self)
         self.BoxListDock.setWidget(self.BoxList)
         self.BoxListDock.setFeatures(QDockWidget.NoDockWidgetFeatures)
-        listLayout.addWidget(self.BoxListDock)
+        list_layout.addWidget(self.BoxListDock)
 
         #  ================== Lower Right Area  ==================
         leftbtmtoolbox = QHBoxLayout()
@@ -440,11 +439,11 @@ class MainWindow(QMainWindow):
         leftbtmtoolbox.addWidget(self.ResortButton)
         leftbtmtoolboxcontainer = QWidget()
         leftbtmtoolboxcontainer.setLayout(leftbtmtoolbox)
-        listLayout.addWidget(leftbtmtoolboxcontainer)
+        list_layout.addWidget(leftbtmtoolboxcontainer)
 
         self.dock = QDockWidget(get_str("boxLabelText"), self)
         self.dock.setObjectName(get_str("labels"))
-        self.dock.setWidget(labelListContainer)
+        self.dock.setWidget(label_list_container)
 
         #  ================== Zoom Bar  ==================
         self.imageSlider = QSlider(Qt.Horizontal)
@@ -507,9 +506,9 @@ class MainWindow(QMainWindow):
         hlayout.addWidget(self.iconlist)
         hlayout.addWidget(self.nextButton)
 
-        iconListContainer = QWidget()
-        iconListContainer.setLayout(hlayout)
-        iconListContainer.setFixedHeight(100)
+        icon_list_container = QWidget()
+        icon_list_container.setLayout(hlayout)
+        icon_list_container.setFixedHeight(100)
 
         #  ================== Canvas ==================
         self.canvas = Canvas(parent=self)
@@ -531,14 +530,14 @@ class MainWindow(QMainWindow):
         self.canvas.selectionChanged.connect(self.shapeSelectionChanged)
         self.canvas.drawingPolygon.connect(self.toggleDrawingSensitive)
 
-        centerLayout = QVBoxLayout()
-        centerLayout.setContentsMargins(0, 0, 0, 0)
-        centerLayout.addWidget(scroll)
-        centerLayout.addWidget(iconListContainer, 0, Qt.AlignCenter)
-        centerContainer = QWidget()
-        centerContainer.setLayout(centerLayout)
+        center_layout = QVBoxLayout()
+        center_layout.setContentsMargins(0, 0, 0, 0)
+        center_layout.addWidget(scroll)
+        center_layout.addWidget(icon_list_container, 0, Qt.AlignCenter)
+        center_container = QWidget()
+        center_container.setLayout(center_layout)
 
-        self.setCentralWidget(centerContainer)
+        self.setCentralWidget(center_container)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dock)
 
         self.dock.setFeatures(
@@ -548,7 +547,9 @@ class MainWindow(QMainWindow):
 
         #  ================== Actions ==================
         action = partial(newAction, self)
-        quit = action(get_str("quit"), self.close, "Ctrl+Q", "quit", get_str("quitApp"))
+        quit_action = action(
+            get_str("quit"), self.close, "Ctrl+Q", "quit", get_str("quitApp")
+        )
 
         opendir = action(
             get_str("openDir"), self.openDirDialog, "Ctrl+u", "open", get_str("openDir")
@@ -580,7 +581,7 @@ class MainWindow(QMainWindow):
             get_str("tipchoosemodel"),
         )
 
-        deleteImg = action(
+        delete_img_action = action(
             get_str("deleteImg"),
             self.deleteImg,
             "Ctrl+Shift+D",
@@ -891,7 +892,7 @@ class MainWindow(QMainWindow):
         )
         expand = action(
             get_str("expandBox"),
-            self.expandSelectedShape,
+            self.expand_selected_shape,
             "Ctrl+K",
             "expand",
             get_str("expandBoxDetail"),
@@ -899,7 +900,7 @@ class MainWindow(QMainWindow):
         )
         resort = action(
             get_str("resortposition"),
-            self.resortBoxPosition,
+            self.resort_box_position,
             "Ctrl+B",
             "resort",
             get_str("resortpositiondetail"),
@@ -909,7 +910,7 @@ class MainWindow(QMainWindow):
         self.editButton.setDefaultAction(edit)
         self.newButton.setDefaultAction(create)
         self.createpolyButton.setDefaultAction(createpoly)
-        self.DelButton.setDefaultAction(deleteImg)
+        self.DelButton.setDefaultAction(delete_img_action)
         self.SaveButton.setDefaultAction(save)
         self.AutoRecognition.setDefaultAction(AutoRec)
         self.reRecogButton.setDefaultAction(reRec)
@@ -970,7 +971,7 @@ class MainWindow(QMainWindow):
         self.actions = struct(
             save=save,
             resetAll=resetAll,
-            deleteImg=deleteImg,
+            deleteImg=delete_img_action,
             lineColor=color1,
             create=create,
             createpoly=createpoly,
@@ -1011,7 +1012,7 @@ class MainWindow(QMainWindow):
                 saveLabel,
                 exportJSON,
                 resetAll,
-                quit,
+                quit_action,
             ),
             beginner=(),
             advanced=(),
@@ -1134,8 +1135,8 @@ class MainWindow(QMainWindow):
                 self.autoSaveUnsavedChangesOption,
                 None,
                 resetAll,
-                deleteImg,
-                quit,
+                delete_img_action,
+                quit_action,
             ),
         )
 
@@ -1769,7 +1770,6 @@ class MainWindow(QMainWindow):
         annotationFilePath = annotationFilePath
 
         def format_shape(s):
-            # print('s in saveLabels is ',s)
             return dict(
                 label=s.label,  # str
                 line_color=s.line_color.getRgb(),
@@ -1902,6 +1902,8 @@ class MainWindow(QMainWindow):
         """
         label list drag drop signal slot
         """
+        newIndex = None
+        selectedShapeIndex = None
         # should only select single item
         for item in self.labelList.selectedItems():
             newIndex = self.labelList.indexFromItem(item).row()
@@ -1914,7 +1916,7 @@ class MainWindow(QMainWindow):
         if newIndex == selectedShapeIndex:
             return
 
-        # move corresponding item in shape list
+        # move corresponding item list
         shape = self.canvas.shapes.pop(selectedShapeIndex)
         self.canvas.shapes.insert(newIndex, shape)
 
@@ -2198,7 +2200,7 @@ class MainWindow(QMainWindow):
                 self.labelListDockName + f" ({self.labelList.count()})"
             )
 
-            self.canvas.setFocus(True)
+            self.canvas.setFocus(Qt.FocusReason.TabFocusReason)
 
             if self.bbox_auto_zoom_center:
                 if len(self.canvas.shapes) > 0:
@@ -2402,7 +2404,9 @@ class MainWindow(QMainWindow):
 
         else:
             if self.lang == "ch":
-                self.msgBox.warning(self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!")
+                self.msgBox.warning(
+                    self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!"
+                )
             else:
                 self.msgBox.warning(
                     self,
@@ -2692,7 +2696,7 @@ class MainWindow(QMainWindow):
         proc = QProcess()
         proc.startDetached(os.path.abspath(__file__))
 
-    def mayContinue(self):  #
+    def mayContinue(self):
         if not self.dirty:
             return True
         else:
@@ -2851,7 +2855,7 @@ class MainWindow(QMainWindow):
             owidth += itemwidget.width()
         self.iconlist.setMinimumWidth(owidth + 50)
 
-    def gen_quad_from_poly(self, poly):
+    def gen_quad_from_poly(self, poly: np.ndarray):
         """
         Generate min area quad from poly.
         """
@@ -2942,9 +2946,7 @@ class MainWindow(QMainWindow):
         img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), 1)
         if self.canvas.shapes:
             self.result_dic = []
-            self.result_dic_locked = (
-                []
-            )  # result_dic_locked stores the ocr result of self.canvas.lockedShapes
+            self.result_dic_locked = []  # result_dic_locked stores the ocr result of self.canvas.lockedShapes
             rec_flag = 0
             for shape in self.canvas.shapes:
                 box = [[int(p.x()), int(p.y())] for p in shape.points]
@@ -3189,7 +3191,7 @@ class MainWindow(QMainWindow):
                 xl = win32com.client.Dispatch("Excel.Application")
                 xl.Visible = True
                 xl.Workbooks.Open(excel_path)
-                # excelEx = "You need to show the excel executable at this point"
+                # excelEx = "You need to show the Excel executable at this point"
                 # subprocess.Popen([excelEx, excel_path])
 
                 # os.startfile(excel_path)
@@ -3388,7 +3390,7 @@ class MainWindow(QMainWindow):
                 del self.ocr
                 self.ocr = PaddleOCR(
                     use_doc_orientation_classify=False,
-                    use_textline_orientation=False,
+                    use_textline_orientation=True,
                     use_doc_unwarping=False,
                     lang=choose_lang,
                     device=self.gpu,
@@ -3644,7 +3646,7 @@ class MainWindow(QMainWindow):
             self.setDirty()
             self.actions.save.setEnabled(True)
 
-    def expandSelectedShape(self):
+    def expand_selected_shape(self):
         img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), 1)
         for shape in self.canvas.selectedShapes:
             box = [[int(p.x()), int(p.y())] for p in shape.points]
@@ -3669,7 +3671,7 @@ class MainWindow(QMainWindow):
         def get_top_left(rect):
             xs = [p[0] for p in rect]
             ys = [p[1] for p in rect]
-            return (min(xs), min(ys))
+            return min(xs), min(ys)
 
         avg_height = sum(
             [max(p[1] for p in rect) - min(p[1] for p in rect) for rect in rectangles]
@@ -3692,11 +3694,11 @@ class MainWindow(QMainWindow):
             rows.append(current_row)
         sorted_rects = []
         for row in rows:
-            row.sort(key=lambda x: x[1][0])
+            row.sort(key=lambda key_x: key_x[1][0])
             sorted_rects.extend([rectangles[i] for i, _ in row])
         return sorted_rects
 
-    def resortBoxPosition(self):
+    def resort_box_position(self):
         # get original elements
         items = []
         for i in range(self.BoxList.count()):
@@ -3709,7 +3711,7 @@ class MainWindow(QMainWindow):
             try:
                 rect = ast.literal_eval(text)  # 转为列表
                 rectangles.append(rect)
-            except (ValueError, SyntaxError) as e:
+            except (ValueError, SyntaxError):
                 logger.error(f"Error parsing text: {text}")
                 continue
         # start resort
@@ -3761,14 +3763,16 @@ def parse_rgb(value):
     r, g, b = int(r), int(g), int(b)
     if not (0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
         raise argparse.ArgumentTypeError("RGB values must be between 0 and 255.")
-    return (r, g, b)
+    return r, g, b
 
 
-def get_main_app(argv=[]):
+def get_main_app(argv=None):
     """
     Standard boilerplate Qt application code.
     Do everything but app.exec_() -- so that we can test the application in one thread
     """
+    if argv is None:
+        argv = []
     app = QApplication(argv)
     app.setApplicationName(__appname__)
     app.setWindowIcon(newIcon("app"))
