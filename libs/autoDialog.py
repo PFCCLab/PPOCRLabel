@@ -41,11 +41,12 @@ class Worker(QThread):
                 if self.handle == 0:
                     self.listValue.emit(img_path)
                     if self.model == "paddle":
-                        h, w, _ = cv2.imdecode(
+                        img = cv2.imdecode(
                             np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_COLOR
-                        ).shape
+                        )
+                        h, w, _ = img.shape
                         if h > 32 and w > 32:
-                            result = self.ocr.predict(img_path)[0]
+                            result = self.ocr.predict(img)[0]
                             self.result_dic = []
                             for poly, text, score in zip(
                                 result["rec_polys"],
