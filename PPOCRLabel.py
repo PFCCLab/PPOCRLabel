@@ -2137,7 +2137,9 @@ class MainWindow(QMainWindow):
 
         if unicodeFilePath and os.path.exists(unicodeFilePath):
             self.canvas.verified = False
-            cvimg = cv2.imdecode(np.fromfile(unicodeFilePath, dtype=np.uint8), 1)
+            cvimg = cv2.imdecode(
+                np.fromfile(unicodeFilePath, dtype=np.uint8), cv2.IMREAD_COLOR
+            )
             height, width, depth = cvimg.shape
             cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2RGB)
             image = QImage(
@@ -2939,7 +2941,7 @@ class MainWindow(QMainWindow):
         self.init_key_list(self.Cachelabel)
 
     def reRecognition(self):
-        img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), 1)
+        img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
         if self.canvas.shapes:
             self.result_dic = []
             self.result_dic_locked = (
@@ -3023,7 +3025,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Information", "Draw a box!")
 
     def singleRerecognition(self):
-        img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), 1)
+        img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
         for shape in self.canvas.selectedShapes:
             box = [[int(p.x()), int(p.y())] for p in shape.points]
             if len(box) > 4:
@@ -3495,7 +3497,9 @@ class MainWindow(QMainWindow):
                 idx = self.getImglabelidx(key)
                 try:
                     img_path = os.path.dirname(base_dir) + "/" + key
-                    img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), -1)
+                    img = cv2.imdecode(
+                        np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_COLOR
+                    )
                     for i, label in enumerate(self.PPlabel[idx]):
                         if label["difficult"]:
                             continue
@@ -3645,7 +3649,7 @@ class MainWindow(QMainWindow):
             self.actions.save.setEnabled(True)
 
     def expandSelectedShape(self):
-        img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), 1)
+        img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
         for shape in self.canvas.selectedShapes:
             box = [[int(p.x()), int(p.y())] for p in shape.points]
             if len(box) > 4:

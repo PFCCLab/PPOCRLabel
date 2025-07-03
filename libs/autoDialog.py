@@ -42,7 +42,7 @@ class Worker(QThread):
                     self.listValue.emit(img_path)
                     if self.model == "paddle":
                         h, w, _ = cv2.imdecode(
-                            np.fromfile(img_path, dtype=np.uint8), 1
+                            np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_COLOR
                         ).shape
                         if h > 32 and w > 32:
                             result = self.ocr.predict(img_path)[0]
