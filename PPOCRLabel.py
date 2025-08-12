@@ -197,8 +197,8 @@ class MainWindow(QMainWindow):
             "use_textline_orientation": False,
             "device": self.gpu,
             "lang": self.lang,
-            "text_detection_model_name": "PP-OCRv5_server_det",
-            "text_recognition_model_name": "PP-OCRv5_server_rec",
+            "text_detection_model_name": "PP-OCRv5_mobile_det",
+            "text_recognition_model_name": "PP-OCRv5_mobile_rec",
             "enable_mkldnn": False,
         }
 
@@ -211,12 +211,12 @@ class MainWindow(QMainWindow):
 
         self.ocr = PaddleOCR(**params)
         self.text_recognizer = TextRecognition(
-            model_name="PP-OCRv5_server_rec",
+            model_name="PP-OCRv5_mobile_rec",
             model_dir=rec_model_dir,
             device=self.gpu,
         )
         self.text_detector = TextDetection(
-            model_name="PP-OCRv5_server_det",
+            model_name="PP-OCRv5_mobile_det",
             model_dir=det_model_dir,
             device=self.gpu,
         )
@@ -3392,6 +3392,8 @@ class MainWindow(QMainWindow):
                     use_doc_orientation_classify=False,
                     use_textline_orientation=False,
                     use_doc_unwarping=False,
+                    text_detection_model_name="PP-OCRv5_mobile_det",
+                    text_recognition_model_name="PP-OCRv5_mobile_rec",
                     lang=choose_lang,
                     device=self.gpu,
                 )
