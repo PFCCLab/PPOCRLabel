@@ -1399,6 +1399,19 @@ class MainWindow(QMainWindow):
         ext = os.path.splitext(filename)[1]
         cv2.imencode(ext, pix)[1].tofile(filename)
         self.canvas.update()
+
+        # Remove confirmation status after rotation
+        img_idx = self.getImglabelidx(filename)
+        if img_idx in self.fileStatedict:
+            self.fileStatedict.pop(img_idx)
+
+        # Remove the "done" icon from the file list
+        if filename in self.mImgList:
+            currIndex = self.mImgList.index(filename)
+            item = self.fileListWidget.item(currIndex)
+            if item:
+                item.setIcon(QIcon())
+
         self.loadFile(filename)
 
     def rotateImgWarn(self):
