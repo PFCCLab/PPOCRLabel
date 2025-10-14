@@ -1411,6 +1411,7 @@ class MainWindow(QMainWindow):
             item = self.fileListWidget.item(currIndex)
             if item:
                 item.setIcon(QIcon())
+                item.setIcon(newIcon("close"))
 
         self.loadFile(filename)
 
