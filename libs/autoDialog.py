@@ -44,29 +44,39 @@ class Worker(QThread):
                         img = cv2.imdecode(
                             np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_COLOR
                         )
-                        h, w, _ = img.shape
-                        if h > 32 and w > 32:
-                            result = self.ocr.predict(img)[0]
-                            self.result_dic = []
-                            for poly, text, score in zip(
-                                result["rec_polys"],
-                                result["rec_texts"],
-                                result["rec_scores"],
-                            ):
-                                # Convert numpy array to list for JSON serialization
-                                poly_list = (
-                                    poly.tolist() if hasattr(poly, "tolist") else poly
-                                )
-                                self.result_dic.append([poly_list, (text, score)])
-                        else:
+                        if img is None:
                             logger.warning(
-                                "The size of %s is too small to be recognised", img_path
+                                "Failed to decode image file %s. The file may be corrupted or in an unsupported format.",
+                                img_path,
                             )
                             self.result_dic = None
+                        else:
+                            h, w, _ = img.shape
+                            if h > 32 and w > 32:
+                                result = self.ocr.predict(img)[0]
+                                self.result_dic = []
+                                for poly, text, score in zip(
+                                    result["rec_polys"],
+                                    result["rec_texts"],
+                                    result["rec_scores"],
+                                ):
+                                    # Convert numpy array to list for JSON serialization
+                                    poly_list = (
+                                        poly.tolist()
+                                        if hasattr(poly, "tolist")
+                                        else poly
+                                    )
+                                    self.result_dic.append([poly_list, (text, score)])
+                            else:
+                                logger.warning(
+                                    "The size of %s is too small to be recognised",
+                                    img_path,
+                                )
+                                self.result_dic = None
 
                     # 结果保存
                     if self.result_dic is None or len(self.result_dic) == 0:
-                        logger.warning("Can not recognise file %s", img_path)
+                        logger.warning("No text detected in file %s", img_path)
                         pass
                     else:
                         strs = ""
