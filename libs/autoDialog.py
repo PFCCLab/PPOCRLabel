@@ -41,15 +41,22 @@ class Worker(QThread):
                 if self.handle == 0:
                     self.listValue.emit(img_path)
                     if self.model == "paddle":
-                        img = cv2.imdecode(
-                            np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_COLOR
-                        )
+                        buf = np.fromfile(img_path, dtype=np.uint8)
+                        if buf.size == 0:
+                            logger.warning(
+                                "Failed to read the image's buffer. The file may be corrupted or in an unsupported format : %s", 
+                                img_path,
+                            )
+                            self.result_dic = None
+                            continue
+                        img = cv2.imdecode(buf, cv2.IMREAD_COLOR)
                         if img is None:
                             logger.warning(
                                 "Failed to decode image file %s. The file may be corrupted or in an unsupported format.",
                                 img_path,
                             )
                             self.result_dic = None
+                            continue
                         else:
                             h, w, _ = img.shape
                             if h > 32 and w > 32:
