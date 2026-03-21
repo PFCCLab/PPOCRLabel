@@ -210,6 +210,7 @@ PPOCRLabel.exe --lang ch
 | W                | 新建矩形框                           |
 | Q  或 Home       | 新建多点框                           |
 | Ctrl + E         | 编辑所选框标签                         |
+| Ctrl + G         | 聚焦缩放至所选框                         |
 | Ctrl + X         |  `--kie` 模式下，修改 Box 的关键字种类 |
 | Ctrl + R         | 重新识别所选标记                        |
 | Ctrl + C         | 【复制并粘贴】选中的标记框                     |

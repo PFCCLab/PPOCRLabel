@@ -234,6 +234,7 @@ labeling in the Excel file, the recommended steps are:
 | W                        | Create a rect box                                |
 | Q  or  Home              | Create a multi-points box                         |
 | Ctrl + E                 | Edit label of the selected box                   |
+| Ctrl + G                 | Focus and zoom into the selected box             |
 | Ctrl + X                 | Change key class of the box when enable `--kie`  |
 | Ctrl + R                 | Re-recognize the selected box                    |
 | Ctrl + C                 | Copy and paste the selected box                  |

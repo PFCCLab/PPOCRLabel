@@ -755,6 +755,15 @@ class MainWindow(QMainWindow):
             enabled=False,
         )
 
+        focusAndZoom = action(
+            get_str("focusAndZoom"),
+            self.focusAndZoom,
+            "Ctrl+G",
+            "zoom",
+            get_str("focusAndZoomDetail"),
+            enabled=False,
+        )
+
         AutoRec = action(
             get_str("autoRecognition"),
             self.autoRecognition,
@@ -955,7 +964,7 @@ class MainWindow(QMainWindow):
 
         # Label list context menu.
         labelMenu = QMenu()
-        addActions(labelMenu, (edit, delete))
+        addActions(labelMenu, (edit, focusAndZoom, delete))
 
         self.labelList.setContextMenuPolicy(Qt.CustomContextMenu)
         self.labelList.customContextMenuRequested.connect(self.popLabelListMenu)
@@ -977,6 +986,7 @@ class MainWindow(QMainWindow):
             tableRec=tableRec,
             delete=delete,
             edit=edit,
+            focusAndZoom=focusAndZoom,
             copy=copy,
             saveRec=saveRec,
             singleRere=singleRere,
@@ -1018,6 +1028,7 @@ class MainWindow(QMainWindow):
             editMenu=(
                 createpoly,
                 edit,
+                focusAndZoom,
                 copy,
                 delete,
                 singleRere,
@@ -1041,6 +1052,7 @@ class MainWindow(QMainWindow):
                 create,
                 createpoly,
                 edit,
+                focusAndZoom,
                 copy,
                 delete,
                 singleRere,
@@ -1502,6 +1514,69 @@ class MainWindow(QMainWindow):
             self.setDirty()
             self.updateComboBox()
 
+    def focusAndZoom(self):
+        if not self.canvas.selectedShapes:
+            return
+
+        # We only focus on the first selected shape if multiple are selected
+        shape = self.canvas.selectedShapes[0]
+
+        # Calculate the center of the shape
+        points = shape.points
+        if not points:
+            return
+
+        center_x, center_y, area = polygon_bounding_box_center_and_area(points)
+
+        # Determine target zoom level
+        vw = self.scrollArea.viewport().width()
+        vh = self.scrollArea.viewport().height()
+
+        # Get bounding box of the shape
+        min_x = min(p.x() for p in points)
+        max_x = max(p.x() for p in points)
+        min_y = min(p.y() for p in points)
+        max_y = max(p.y() for p in points)
+
+        bw = max_x - min_x
+        bh = max_y - min_y
+
+        # Avoid division by zero
+        if bw == 0 or bh == 0:
+            return
+
+        # Target zoom such that box takes up say 60% of viewport
+        zoom_x = (vw * 0.6) / bw
+        zoom_y = (vh * 0.6) / bh
+
+        target_zoom = min(zoom_x, zoom_y) * 100
+
+        # Clamp zoom level to reasonable range (e.g. 50% to 500%)
+        target_zoom = max(50, min(target_zoom, 500))
+
+        # Set zoom
+        self.setZoom(target_zoom)
+        self.imageSlider.setValue(int(target_zoom))
+        self.paintCanvas()  # Updates canvas.scale and adjusts size
+
+        # Center on the shape
+        # We need to process events to ensure the scrollbars are updated after paintCanvas
+        QApplication.processEvents()
+
+        scale = 0.01 * self.zoomWidget.value()
+
+        # Zoomed coordinates
+        zx = center_x * scale
+        zy = center_y * scale
+
+        # Scroll area's bars
+        h_bar = self.scrollBars[Qt.Horizontal]
+        v_bar = self.scrollBars[Qt.Vertical]
+
+        # Set values to center zx, zy in viewport
+        h_bar.setValue(int(zx - vw / 2))
+        v_bar.setValue(int(zy - vh / 2))
+
     # =================== detection box related functions ===================
     def boxItemChanged(self, item):
         shape = self.itemsToShapesbox[item]
@@ -1653,6 +1728,7 @@ class MainWindow(QMainWindow):
         self.actions.delete.setEnabled(n_selected)
         self.actions.copy.setEnabled(n_selected)
         self.actions.edit.setEnabled(n_selected == 1)
+        self.actions.focusAndZoom.setEnabled(n_selected > 0)
         self.actions.lock.setEnabled(n_selected)
         self.actions.change_cls.setEnabled(n_selected)
         self.actions.expand.setEnabled(n_selected)
