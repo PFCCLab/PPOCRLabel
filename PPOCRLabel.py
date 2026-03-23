@@ -1526,7 +1526,7 @@ class MainWindow(QMainWindow):
         if not points:
             return
 
-        center_x, center_y, area = polygon_bounding_box_center_and_area(points)
+        center_x, center_y, _ = polygon_bounding_box_center_and_area(points)
 
         # Determine target zoom level
         vw = self.scrollArea.viewport().width()
@@ -1557,17 +1557,19 @@ class MainWindow(QMainWindow):
         # Set zoom
         self.setZoom(target_zoom)
         self.imageSlider.setValue(int(target_zoom))
-        self.paintCanvas()  # Updates canvas.scale and adjusts size
 
-        # Center on the shape
-        # We need to process events to ensure the scrollbars are updated after paintCanvas
-        QApplication.processEvents()
+        # Schedule centering after layout updates to ensure scrollbars are updated
+        QTimer.singleShot(0, lambda: self.centerOnPoint(center_x, center_y))
+
+    def centerOnPoint(self, x, y):
+        vw = self.scrollArea.viewport().width()
+        vh = self.scrollArea.viewport().height()
 
         scale = 0.01 * self.zoomWidget.value()
 
         # Zoomed coordinates
-        zx = center_x * scale
-        zy = center_y * scale
+        zx = x * scale
+        zy = y * scale
 
         # Scroll area's bars
         h_bar = self.scrollBars[Qt.Horizontal]
