@@ -44,7 +44,7 @@ class Worker(QThread):
                         buf = np.fromfile(img_path, dtype=np.uint8)
                         if buf.size == 0:
                             logger.warning(
-                                "Failed to read the image's buffer. The file may be corrupted or in an unsupported format : %s", 
+                                "Failed to read the image's buffer. The file may be corrupted or in an unsupported format: %s",
                                 img_path,
                             )
                             self.result_dic = None
