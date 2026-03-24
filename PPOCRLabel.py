@@ -19,6 +19,7 @@ import codecs
 import json
 import os
 import platform
+import signal
 import subprocess
 import sys
 from functools import partial
@@ -3945,7 +3946,17 @@ def get_main_app(argv=[]):
 
 def main():
     """construct main app and run it"""
-    app, _win = get_main_app(sys.argv)
+    app, win = get_main_app(sys.argv)
+
+    # Capture SIGINT (Ctrl+C) and trigger window close
+    signal.signal(signal.SIGINT, lambda *args: win.close())
+
+    # Python signal handlers only run when the interpreter is active.
+    # QTimer keeps the interpreter active periodically during the event loop.
+    timer = QTimer()
+    timer.start(500)
+    timer.timeout.connect(lambda: None)
+
     return app.exec_()
 
 
