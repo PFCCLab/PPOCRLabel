@@ -154,7 +154,9 @@ class MainWindow(QMainWindow):
         default_predefined_class_file=None,
         default_save_dir=None,
         det_model_dir=None,
+        det_model_name="PP-OCRv5_mobile_det",
         rec_model_dir=None,
+        rec_model_name="PP-OCRv5_mobile_rec",
         cls_model_dir=None,
         label_font_path=None,
         selected_shape_color=(255, 255, 0),
@@ -190,6 +192,11 @@ class MainWindow(QMainWindow):
         self.key_dialog_tip = get_str("keyDialogTip")
 
         self.defaultSaveDir = default_save_dir
+        self.det_model_dir = det_model_dir
+        self.det_model_name = det_model_name
+        self.rec_model_dir = rec_model_dir
+        self.rec_model_name = rec_model_name
+        self.cls_model_dir = cls_model_dir
 
         params = {
             "use_doc_orientation_classify": False,
@@ -197,27 +204,27 @@ class MainWindow(QMainWindow):
             "use_textline_orientation": False,
             "device": self.gpu,
             "lang": self.lang,
-            "text_detection_model_name": "PP-OCRv5_mobile_det",
-            "text_recognition_model_name": "PP-OCRv5_mobile_rec",
+            "text_detection_model_name": self.det_model_name,
+            "text_recognition_model_name": self.rec_model_name,
             "enable_mkldnn": False,
         }
 
-        if det_model_dir is not None:
-            params["text_detection_model_dir"] = det_model_dir
-        if rec_model_dir is not None:
-            params["text_recognition_model_dir"] = rec_model_dir
-        if cls_model_dir is not None:
-            params["text_line_orientation_model_dir"] = cls_model_dir
+        if self.det_model_dir is not None:
+            params["text_detection_model_dir"] = self.det_model_dir
+        if self.rec_model_dir is not None:
+            params["text_recognition_model_dir"] = self.rec_model_dir
+        if self.cls_model_dir is not None:
+            params["text_line_orientation_model_dir"] = self.cls_model_dir
 
         self.ocr = PaddleOCR(**params)
         self.text_recognizer = TextRecognition(
-            model_name="PP-OCRv5_mobile_rec",
-            model_dir=rec_model_dir,
+            model_name=self.rec_model_name,
+            model_dir=self.rec_model_dir,
             device=self.gpu,
         )
         self.text_detector = TextDetection(
-            model_name="PP-OCRv5_mobile_det",
-            model_dir=det_model_dir,
+            model_name=self.det_model_name,
+            model_dir=self.det_model_dir,
             device=self.gpu,
         )
         self.table_ocr = PPStructureV3(
@@ -3480,15 +3487,23 @@ class MainWindow(QMainWindow):
             choose_lang = lg_idx[current_text]
             if hasattr(self, "ocr"):
                 del self.ocr
-                self.ocr = PaddleOCR(
-                    use_doc_orientation_classify=False,
-                    use_textline_orientation=False,
-                    use_doc_unwarping=False,
-                    text_detection_model_name="PP-OCRv5_mobile_det",
-                    text_recognition_model_name="PP-OCRv5_mobile_rec",
-                    lang=choose_lang,
-                    device=self.gpu,
-                )
+                params = {
+                    "use_doc_orientation_classify": False,
+                    "use_textline_orientation": False,
+                    "use_doc_unwarping": False,
+                    "text_detection_model_name": self.det_model_name,
+                    "text_recognition_model_name": self.rec_model_name,
+                    "lang": choose_lang,
+                    "device": self.gpu,
+                }
+                if self.det_model_dir is not None:
+                    params["text_detection_model_dir"] = self.det_model_dir
+                if self.rec_model_dir is not None:
+                    params["text_recognition_model_dir"] = self.rec_model_dir
+                if self.cls_model_dir is not None:
+                    params["text_line_orientation_model_dir"] = self.cls_model_dir
+
+                self.ocr = PaddleOCR(**params)
             if choose_lang in ["ch", "en"]:
                 if hasattr(self, "table_ocr"):
                     del self.table_ocr
@@ -3886,7 +3901,9 @@ def get_main_app(argv=[]):
         nargs="?",
     )
     arg_parser.add_argument("--det_model_dir", type=str, default=None, nargs="?")
+    arg_parser.add_argument("--det_model_name", type=str, default="PP-OCRv5_mobile_det", nargs="?")
     arg_parser.add_argument("--rec_model_dir", type=str, default=None, nargs="?")
+    arg_parser.add_argument("--rec_model_name", type=str, default="PP-OCRv5_mobile_rec", nargs="?")
     arg_parser.add_argument("--rec_char_dict_path", type=str, default=None, nargs="?")
     arg_parser.add_argument("--cls_model_dir", type=str, default=None, nargs="?")
     arg_parser.add_argument(
@@ -3910,7 +3927,9 @@ def get_main_app(argv=[]):
         kie_mode=args.kie,
         default_predefined_class_file=args.predefined_classes_file,
         det_model_dir=args.det_model_dir,
+        det_model_name=args.det_model_name,
         rec_model_dir=args.rec_model_dir,
+        rec_model_name=args.rec_model_name,
         cls_model_dir=args.cls_model_dir,
         bbox_auto_zoom_center=args.bbox_auto_zoom_center,
         label_font_path=args.label_font_path,

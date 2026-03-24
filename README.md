@@ -23,9 +23,11 @@ PPOCRLabelv3 is a semi-automatic graphic annotation tool suitable for OCR field,
 - 2024.09:
   - Added `Re-recognition` and `Auto Save Unsaved changes` features. For usage details, please refer to the `11. Additional Feature Description` in the `2.1 Operational Steps` section below.
   - Added the parameter `--img_list_natural_sort`, which defaults to natural sorting for the left image list. After configuring this parameter, character sorting will be used to easily locate images based on character order.
-  - Add 4 custom model parameters:
+  - Add 6 custom model parameters:
     - `det_model_dir`: Path to the detection model directory
+    - `det_model_name`: Name of the detection model
     - `rec_model_dir`: Path to the recognition model directory
+    - `rec_model_name`: Name of the recognition model
     - `rec_char_dict_path`: Path to the recognition model dictionary file
     - `cls_model_dir`: Path to the classification model directory
   - Added the `--bbox_auto_zoom_center` parameter, which can be enabled when there is only one bounding box in the image, automatically centering and zooming in on the bounding box.
@@ -257,7 +259,13 @@ labeling in the Excel file, the recommended steps are:
 - Model language switching: Changing the built-in model language is supportable by clicking "PaddleOCR"-"Choose OCR Model" in the menu bar. Currently supported languages​include French, German, Korean, and Japanese.
   For specific model download links, please refer to [PaddleOCR Model List](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/docs/version3.x/model_list.md).
 
-- **Custom Model**: If users want to replace the built-in model with their own inference model. Through the following code example:
+- **Custom Model**: If users want to replace the built-in model with their own inference model, they can now do so directly via the command line:
+
+```bash
+python PPOCRLabel.py --det_model_dir {your_det_model_dir} --det_model_name {your_det_model_name} --rec_model_dir {your_rec_model_dir} --rec_model_name {your_rec_model_name}
+```
+
+Alternatively, you can modify the code as shown below:
  ```
  from paddleocr import PaddleOCR, PPStructureV3
   ocr = PaddleOCR(
@@ -266,6 +274,7 @@ labeling in the Excel file, the recommended steps are:
   text_recognition_model_name='{your_text_rec_model_name}',
   text_recognition_model_dir='{your_text_rec_model_dir}',  
 )
+```
 
 table_ocr = PPStructureV3(
   layout_detection_model_name='{your_layout_det_model_name}',
