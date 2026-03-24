@@ -250,7 +250,6 @@ PPOCRLabel.exe --lang ch
   text_recognition_model_name='{your_text_rec_model_name}',
   text_recognition_model_dir='{your_text_rec_model_dir}',  
  )
- ```
 table_ocr = PPStructureV3(
   layout_detection_model_name='{your_layout_det_model_name}',
   layout_detection_model_dir='{your_layout_det_model_dir}',
