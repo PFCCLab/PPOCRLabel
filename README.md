@@ -274,7 +274,6 @@ Alternatively, you can modify the code as shown below:
   text_recognition_model_name='{your_text_rec_model_name}',
   text_recognition_model_dir='{your_text_rec_model_dir}',  
 )
-```
 
 table_ocr = PPStructureV3(
   layout_detection_model_name='{your_layout_det_model_name}',
