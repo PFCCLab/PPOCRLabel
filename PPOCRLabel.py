@@ -3901,9 +3901,13 @@ def get_main_app(argv=[]):
         nargs="?",
     )
     arg_parser.add_argument("--det_model_dir", type=str, default=None, nargs="?")
-    arg_parser.add_argument("--det_model_name", type=str, default="PP-OCRv5_mobile_det", nargs="?")
+    arg_parser.add_argument(
+        "--det_model_name", type=str, default="PP-OCRv5_mobile_det", nargs="?"
+    )
     arg_parser.add_argument("--rec_model_dir", type=str, default=None, nargs="?")
-    arg_parser.add_argument("--rec_model_name", type=str, default="PP-OCRv5_mobile_rec", nargs="?")
+    arg_parser.add_argument(
+        "--rec_model_name", type=str, default="PP-OCRv5_mobile_rec", nargs="?"
+    )
     arg_parser.add_argument("--rec_char_dict_path", type=str, default=None, nargs="?")
     arg_parser.add_argument("--cls_model_dir", type=str, default=None, nargs="?")
     arg_parser.add_argument(
