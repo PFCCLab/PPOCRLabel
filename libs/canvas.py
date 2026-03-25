@@ -315,7 +315,7 @@ class Canvas(QWidget):
                     self.handleDrawing(pos)
             elif not self.selectedShapes:
                 # pan
-                self.restoreCursor()
+                self.overrideCursor(CURSOR_DEFAULT)
 
         if self.movingShape and self.hShape:
             if self.hShape in self.shapes:
