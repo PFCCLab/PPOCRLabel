@@ -15,6 +15,8 @@ PPOCRLabelv3 is a semi-automatic graphic annotation tool suitable for OCR field,
 | <img src="./data/gif/multi-point.gif" width="80%"/> |  <img src="./data/gif/kie.gif" width="100%"/>  |
 
 ### Recent Update
+- 2026.03:
+  - Add the `Settings` to change the application's font size.
 - 2025.06:
   - Add the `Resort Bounding Box Positions` features. For usage details, please refer to the `11. Additional Feature Description` in the `2.1 Operational Steps` section below.
 - 2024.11:
@@ -184,6 +186,7 @@ PPOCRLabel.exe --lang ch
       - `v`: After pressing, the up, down, left, and right arrow keys will move the 4th vertex individually.
       - `b`: After pressing, the up, down, left, and right arrow keys will revert to the default action of moving the entire bounding box.
     - `Bottom right` -> `Resort Positions`: Clicking this will arrange the bounding boxes in order from top to bottom and left to right. This is used to address the issue of manually adjusting the order after adding rectangular labels when identifying table structures.
+    - `File` -> `Settings`: Clicking this will open a popup where the user can set the application's font size. This setting is saved and applied to all UI elements in future sessions.
 
 ### 2.2 Table Annotation
 
