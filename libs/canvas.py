@@ -32,6 +32,7 @@ CURSOR_GRAB = Qt.OpenHandCursor
 class Canvas(QWidget):
     zoomRequest = pyqtSignal(int)
     scrollRequest = pyqtSignal(int, int)
+    pixelScrollRequest = pyqtSignal(int, int)
     newShape = pyqtSignal()
     # selectionChanged = pyqtSignal(bool)
     selectionChanged = pyqtSignal(list)
@@ -212,10 +213,11 @@ class Canvas(QWidget):
                 self.movingShape = True
             else:
                 # pan
-                delta_x = pos.x() - self.pan_initial_pos.x()
-                delta_y = pos.y() - self.pan_initial_pos.y()
-                self.scrollRequest.emit(delta_x, Qt.Horizontal)
-                self.scrollRequest.emit(delta_y, Qt.Vertical)
+                delta = ev.globalPos() - self.pan_initial_pos
+                if delta.x() != 0 or delta.y() != 0:
+                    self.overrideCursor(CURSOR_MOVE)
+                    self.pixelScrollRequest.emit(delta.x(), delta.y())
+                    self.pan_initial_pos = ev.globalPos()
                 self.update()
             return
 
@@ -282,7 +284,7 @@ class Canvas(QWidget):
                 group_mode = int(ev.modifiers()) == Qt.ControlModifier
                 self.selectShapePoint(pos, multiple_selection_mode=group_mode)
                 self.prevPoint = pos
-                self.pan_initial_pos = pos
+                self.pan_initial_pos = ev.globalPos()
 
         elif ev.button() == Qt.RightButton and self.editing():
             group_mode = int(ev.modifiers()) == Qt.ControlModifier
@@ -306,13 +308,14 @@ class Canvas(QWidget):
             else:
                 self.overrideCursor(CURSOR_GRAB)
 
-        elif ev.button() == Qt.LeftButton and not self.fourpoint:
-            pos = self.transformPos(ev.pos())
+        elif ev.button() == Qt.LeftButton:
             if self.drawing():
-                self.handleDrawing(pos)
-            else:
+                if not self.fourpoint:
+                    pos = self.transformPos(ev.pos())
+                    self.handleDrawing(pos)
+            elif not self.selectedShapes:
                 # pan
-                QApplication.restoreOverrideCursor()  # ?
+                self.overrideCursor(CURSOR_DEFAULT)
 
         if self.movingShape and self.hShape:
             if self.hShape in self.shapes:

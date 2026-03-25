@@ -533,6 +533,7 @@ class MainWindow(QMainWindow):
         }
         self.scrollArea = scroll
         self.canvas.scrollRequest.connect(self.scrollRequest)
+        self.canvas.pixelScrollRequest.connect(self.pixelScrollRequest)
 
         self.canvas.newShape.connect(partial(self.newShape, False))
         self.canvas.shapeMoved.connect(self.updateBoxlist)  # self.setDirty
@@ -2109,6 +2110,11 @@ class MainWindow(QMainWindow):
         units = -delta / (8 * 15)
         bar = self.scrollBars[orientation]
         bar.setValue(int(bar.value() + bar.singleStep() * units))
+
+    def pixelScrollRequest(self, dx, dy):
+        for orientation, delta in [(Qt.Horizontal, dx), (Qt.Vertical, dy)]:
+            bar = self.scrollBars[orientation]
+            bar.setValue(int(bar.value() - delta))
 
     def setZoom(self, value):
         self.actions.fitWidth.setChecked(False)
