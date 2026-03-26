@@ -46,6 +46,7 @@ from PyQt5.QtGui import (
     QColor,
     QIcon,
     QFontDatabase,
+    QFontMetrics,
 )
 from PyQt5.QtWidgets import (
     QMainWindow,
@@ -98,6 +99,7 @@ from libs.constants import (
     SETTING_WIN_POSE,
     SETTING_WIN_SIZE,
     SETTING_WIN_STATE,
+    SETTING_FONT_SIZE,
 )
 from libs.utils import (
     addActions,
@@ -297,6 +299,9 @@ class MainWindow(QMainWindow):
         self.fileDock = QDockWidget(self.fileListName, self)
         self.fileDock.setObjectName(get_str("files"))
         self.fileDock.setWidget(fileListContainer)
+        dock_font = self.fileDock.font()
+        dock_font.setPointSize(20)
+        self.fileDock.setFont(dock_font)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.fileDock)
 
         #  ================== Key List  ==================
@@ -372,6 +377,7 @@ class MainWindow(QMainWindow):
 
         # Create and add a widget for showing current label item index
         self.indexList = QListWidget()
+        self.indexList.setSpacing(0)
         self.indexList.setMaximumSize(30, 16777215)  # limit max width
         self.indexList.setEditTriggers(QAbstractItemView.NoEditTriggers)  # no editable
         self.indexList.itemSelectionChanged.connect(self.indexSelectionChanged)
@@ -387,6 +393,7 @@ class MainWindow(QMainWindow):
 
         # Create and add a widget for showing current label items
         self.labelList = EditInList()
+        self.labelList.setSpacing(0)
         labelListContainer = QWidget()
         labelListContainer.setLayout(listLayout)
         self.labelList.itemSelectionChanged.connect(self.labelSelectionChanged)
@@ -924,6 +931,15 @@ class MainWindow(QMainWindow):
             enabled=True,
         )
 
+        settings_action = action(
+            get_str("settings"),
+            self.showSettingsDialog,
+            None,
+            "help",
+            get_str("settingsDetail"),
+            enabled=True,
+        )
+
         self.editButton.setDefaultAction(edit)
         self.newButton.setDefaultAction(create)
         self.createpolyButton.setDefaultAction(createpoly)
@@ -1154,6 +1170,7 @@ class MainWindow(QMainWindow):
                 self.autoReRecognitionOption,
                 self.autoSaveUnsavedChangesOption,
                 None,
+                settings_action,
                 resetAll,
                 deleteImg,
                 quit,
@@ -1276,6 +1293,9 @@ class MainWindow(QMainWindow):
         # selected shape color
         self.selected_shape_color = selected_shape_color
 
+        # apply font size
+        self.applyFontSize(self.settings.get(SETTING_FONT_SIZE, 12))
+
     def menu(self, title, actions=None):
         menu = self.menuBar().addMenu(title)
         if actions:
@@ -1397,6 +1417,58 @@ class MainWindow(QMainWindow):
     def showKeysDialog(self):
         msg = keysInfo(self.lang)
         QMessageBox.information(self, "Information", msg)
+
+    def applyFontSize(self, fontSize):
+        # 1. Update standard font objects
+        f = self.font()
+        f.setPointSize(fontSize)
+        QApplication.instance().setFont(f)
+        self.setFont(f)
+
+        # 2. Universal Stylesheet with explicit component targeting.
+        # This is more effective on macOS than a generic QWidget rule.
+        style = f"""
+            QWidget, QLabel, QDockWidget, QMenuBar, QMenu, QStatusBar, QListWidget, QSpinBox, QToolButton {{
+                font-size: {fontSize}pt;
+            }}
+            QDockWidget {{
+                font-size: {fontSize}pt;
+                font-weight: bold;
+            }}
+            QDockWidget::title {{
+                font-size: {fontSize}pt;
+                padding: 4px;
+            }}
+        """
+        QApplication.instance().setStyleSheet(style)
+
+        # 3. Update specific measurements
+        fm = QFontMetrics(f)
+        if hasattr(self, "indexList"):
+            width = fm.width("8888") + 10
+            self.indexList.setFixedWidth(width)
+            self.indexList.setUniformItemSizes(True)
+        if hasattr(self, "labelList"):
+            self.labelList.setUniformItemSizes(True)
+        if hasattr(self, "AutoRecognitionNum"):
+            width = fm.width("8888") + 30
+            self.AutoRecognitionNum.setFixedWidth(width)
+
+    def showSettingsDialog(self):
+        from PyQt5.QtWidgets import QInputDialog
+
+        fontSize, ok = QInputDialog.getInt(
+            self,
+            self.stringBundle.getString("settings"),
+            self.stringBundle.getString("fontSize"),
+            self.settings.get(SETTING_FONT_SIZE, 12),
+            6,
+            100,
+        )
+        if ok:
+            self.settings[SETTING_FONT_SIZE] = fontSize
+            self.settings.save()
+            self.applyFontSize(fontSize)
 
     def createShape(self):
         assert self.beginner()
@@ -1759,8 +1831,9 @@ class MainWindow(QMainWindow):
         self.shapesToItems[shape] = item
         # add current label item index before label string
         current_index = QListWidgetItem(str(self.labelList.count()))
-        current_index.setTextAlignment(Qt.AlignHCenter)
+        current_index.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         self.indexList.addItem(current_index)
+        item.setTextAlignment(Qt.AlignVCenter)
         self.labelList.addItem(item)
         # print('item in add label is ',[(p.x(), p.y()) for p in shape.points], shape.label)
 
@@ -1862,7 +1935,7 @@ class MainWindow(QMainWindow):
         self.indexList.clear()
         for i in range(self.labelList.count()):
             string = QListWidgetItem(str(i))
-            string.setTextAlignment(Qt.AlignHCenter)
+            string.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
             self.indexList.addItem(string)
 
     def saveLabels(self, annotationFilePath, mode="Auto"):
