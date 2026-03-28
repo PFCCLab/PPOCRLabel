@@ -72,15 +72,15 @@ class Worker(QThread):
                                     "The size of %s is too small to be recognised",
                                     img_path,
                                 )
-                                self.result_dic = None
+                                self.result_dic = []  # Clear it instead of None
 
                     # 结果保存
-                    if self.result_dic is None or len(self.result_dic) == 0:
+                    if not self.result_dic:
                         logger.warning("No text detected in file %s", img_path)
-                        pass
                     else:
                         strs = ""
                         for res in self.result_dic:
+                            # ... (keep existing string formatting)
                             chars = res[1][0]
                             cond = res[1][1]
                             posi = res[0]
@@ -93,12 +93,16 @@ class Worker(QThread):
                                 + json.dumps(posi)
                                 + "\n"
                             )
-                        # Sending large amounts of data repeatedly through pyqtSignal may affect the program efficiency
+
                         self.listValue.emit(strs)
                         self.mainThread.result_dic = self.result_dic
                         self.mainThread.filePath = img_path
-                        # 保存
                         self.mainThread.saveFile(mode="Auto")
+                        # CRITICAL: Clear the result_dic after saving to prevent it from
+                        # leaking into the next image or back into the main UI
+                        self.mainThread.result_dic = []
+                        self.result_dic = []
+
                     findex += 1
                     self.progressBarValue.emit(findex)
                 else:

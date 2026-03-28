@@ -220,6 +220,7 @@ PPOCRLabel.exe --lang ch
 | Ctrl + R         | 重新识别所选标记                        |
 | Ctrl + C         | 【复制并粘贴】选中的标记框                     |
 | Ctrl + B         | 重新排序坐标框位置                     |
+| Ctrl + T         | 将多边形框转换为矩形框                     |
 | Ctrl + 鼠标左键    | 多选标记框                           |
 | Backspace 或 Delete    | 删除所选框                           |
 | Ctrl + V 或 End        | 确认本张图片标记                        |
