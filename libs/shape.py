@@ -108,6 +108,8 @@ class Shape(object):
             x = sum(p.x() for p in self.points) / len(self.points)
             y = sum(p.y() for p in self.points) / len(self.points)
             self.center = QPointF(x, y)
+        else:
+            self.center = None
         self._closed = True
 
     def reachMaxPoints(self):

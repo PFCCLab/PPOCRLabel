@@ -80,7 +80,6 @@ class Worker(QThread):
                     else:
                         strs = ""
                         for res in self.result_dic:
-                            # ... (keep existing string formatting)
                             chars = res[1][0]
                             cond = res[1][1]
                             posi = res[0]

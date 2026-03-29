@@ -1109,7 +1109,7 @@ class MainWindow(QMainWindow):
                 shapeLineColor,
                 shapeFillColor,
             ),
-            onLoadActive=(create, createpoly, createMode, editMode, convertToRect),
+            onLoadActive=(create, createpoly, createMode, editMode),
             onShapesPresent=(hideAll, showAll),
         )
 
@@ -3958,6 +3958,9 @@ class MainWindow(QMainWindow):
 
         changed = False
         for shape in self.canvas.selectedShapes:
+            if not shape.points:
+                continue
+
             if len(shape.points) == 4:
                 p0, p1, p2, p3 = shape.points
                 if (
