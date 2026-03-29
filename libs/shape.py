@@ -104,14 +104,12 @@ class Shape(object):
         return pRes
 
     def close(self):
-        try:
-            self.center = QPointF(
-                (self.points[0].x() + self.points[2].x()) / 2,
-                (self.points[0].y() + self.points[2].y()) / 2,
-            )
-        except Exception:
+        if self.points:
+            x = sum(p.x() for p in self.points) / len(self.points)
+            y = sum(p.y() for p in self.points) / len(self.points)
+            self.center = QPointF(x, y)
+        else:
             self.center = None
-            logger.warning("The XY coordinates of QPointF are not detectable!")
         self._closed = True
 
     def reachMaxPoints(self):

@@ -244,6 +244,7 @@ labeling in the Excel file, the recommended steps are:
 | Ctrl + R                 | Re-recognize the selected box                    |
 | Ctrl + C                 | Copy and paste the selected box                  |
 | Ctrl + B                 | Resort Bounding Box Positions |
+| Ctrl + T                 | Convert PolygonBox to RectBox |
 | Ctrl + Left Mouse Button | Multi select the label box                       |
 | Backspace or Delete      | Delete the selected box                          |
 | Ctrl + V  or End         | Check image                                      |

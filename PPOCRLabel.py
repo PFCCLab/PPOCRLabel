@@ -931,6 +931,15 @@ class MainWindow(QMainWindow):
             enabled=True,
         )
 
+        convertToRect = action(
+            get_str("convertToRect"),
+            self.convertToRect,
+            "Ctrl+T",
+            "edit",
+            get_str("convertToRectDetail"),
+            enabled=False,
+        )
+
         settings_action = action(
             get_str("settings"),
             self.showSettingsDialog,
@@ -1012,6 +1021,7 @@ class MainWindow(QMainWindow):
             delete=delete,
             edit=edit,
             focusAndZoom=focusAndZoom,
+            convertToRect=convertToRect,
             copy=copy,
             saveRec=saveRec,
             singleRere=singleRere,
@@ -1054,6 +1064,7 @@ class MainWindow(QMainWindow):
                 createpoly,
                 edit,
                 focusAndZoom,
+                convertToRect,
                 copy,
                 delete,
                 singleRere,
@@ -1078,6 +1089,7 @@ class MainWindow(QMainWindow):
                 createpoly,
                 edit,
                 focusAndZoom,
+                convertToRect,
                 copy,
                 delete,
                 singleRere,
@@ -1815,6 +1827,7 @@ class MainWindow(QMainWindow):
         self.actions.lock.setEnabled(n_selected)
         self.actions.change_cls.setEnabled(n_selected)
         self.actions.expand.setEnabled(n_selected)
+        self.actions.convertToRect.setEnabled(n_selected > 0)
 
     def addLabel(self, shape):
         shape.paintLabel = self.displayLabelOption.isChecked()
@@ -3868,69 +3881,114 @@ class MainWindow(QMainWindow):
             [max(p[1] for p in rect) - min(p[1] for p in rect) for rect in rectangles]
         ) / len(rectangles)
         threshold = avg_height * row_height_threshold
+
+        # Keep track of original indices to handle duplicates correctly
         indexed_rects = [(i, get_top_left(rect)) for i, rect in enumerate(rectangles)]
         indexed_rects.sort(key=lambda x: x[1][1])
+
         rows = []
         current_row = []
-        last_y = indexed_rects[0][1][1]
-        for item in indexed_rects:
-            i, (x, y) = item
-            if abs(y - last_y) <= threshold:
-                current_row.append(item)
-            else:
+        if indexed_rects:
+            last_y = indexed_rects[0][1][1]
+            for item in indexed_rects:
+                i, (x, y) = item
+                if abs(y - last_y) <= threshold:
+                    current_row.append(item)
+                else:
+                    rows.append(current_row)
+                    current_row = [item]
+                last_y = y
+            if current_row:
                 rows.append(current_row)
-                current_row = [item]
-            last_y = y
-        if current_row:
-            rows.append(current_row)
-        sorted_rects = []
+
+        sorted_indices = []
         for row in rows:
             row.sort(key=lambda x: x[1][0])
-            sorted_rects.extend([rectangles[i] for i, _ in row])
-        return sorted_rects
+            sorted_indices.extend([i for i, _ in row])
+        return sorted_indices
 
     def resortBoxPosition(self):
-        # get original elements
-        items = []
-        for i in range(self.BoxList.count()):
-            item = self.BoxList.item(i)
-            items.append({"text": item.text(), "object": item})
-        # get coordinate points
+        # get coordinate points from shapes directly to be more reliable
         rectangles = []
-        for item in items:
-            text = item["text"]
-            try:
-                rect = ast.literal_eval(text)  # 转为列表
-                rectangles.append(rect)
-            except (ValueError, SyntaxError) as e:
-                logger.error(f"Error parsing text: {text}")
-                continue
-        # start resort
-        sorted_rectangles = self.sort_rectangles(rectangles, row_height_threshold=0.5)
-        # old_idx <--> new_idx
-        index_map = []
-        for sorted_rect in sorted_rectangles:
-            for old_idx, rect in enumerate(rectangles):
-                if rect == sorted_rect:
-                    index_map.append(old_idx)
-                    break
-        # resort BoxList labelList canvas.shapes
-        items = [self.BoxList.takeItem(0) for _ in range(self.BoxList.count())]
+        for shape in self.canvas.shapes:
+            rect = [[int(p.x()), int(p.y())] for p in shape.points]
+            rectangles.append(rect)
+
+        if not rectangles:
+            return
+
+        # start resort - now returns indices
+        index_map = self.sort_rectangles(rectangles, row_height_threshold=0.5)
+
+        if len(index_map) != len(self.canvas.shapes):
+            logger.error("Resort failed: index map size mismatch")
+            return
+
+        # resort BoxList, labelList, and canvas.shapes
+        # Take all items out first
+        items_box = [self.BoxList.takeItem(0) for _ in range(self.BoxList.count())]
         items_label = [
             self.labelList.takeItem(0) for _ in range(self.labelList.count())
         ]
-        shapes = self.canvas.shapes
+        shapes = list(self.canvas.shapes)
+
         self.canvas.shapes = []
-        for new_idx in range(len(index_map)):
-            old_idx = index_map[new_idx]
-            self.BoxList.insertItem(new_idx, items[old_idx])
+        for new_idx, old_idx in enumerate(index_map):
+            self.BoxList.insertItem(new_idx, items_box[old_idx])
             self.labelList.insertItem(new_idx, items_label[old_idx])
-            self.canvas.shapes.insert(new_idx, shapes[old_idx])
+            self.canvas.shapes.append(shapes[old_idx])
+
+        # Update internal indices and refresh UI
+        self.updateIndexList()
+        for i, shape in enumerate(self.canvas.shapes):
+            shape.idx = i
+
+        self.canvas.update()
+        self.setDirty()
+
         QMessageBox.information(
             self,
             "Information",
             "resort success!",
         )
+
+    def convertToRect(self):
+        if not self.canvas.selectedShapes:
+            return
+
+        changed = False
+        for shape in self.canvas.selectedShapes:
+            if not shape.points:
+                continue
+
+            if len(shape.points) == 4:
+                p0, p1, p2, p3 = shape.points
+                if (
+                    p0.x() == p3.x()
+                    and p0.y() == p1.y()
+                    and p2.x() == p1.x()
+                    and p2.y() == p3.y()
+                ):
+                    continue
+
+            min_x = min(p.x() for p in shape.points)
+            max_x = max(p.x() for p in shape.points)
+            min_y = min(p.y() for p in shape.points)
+            max_y = max(p.y() for p in shape.points)
+
+            shape.points = [
+                QPointF(min_x, min_y),
+                QPointF(max_x, min_y),
+                QPointF(max_x, max_y),
+                QPointF(min_x, max_y),
+            ]
+            shape.close()
+            changed = True
+
+        if changed:
+            self.updateBoxlist()
+            self.setDirty()
+            self.canvas.repaint()
 
 
 def inverted(color):

@@ -472,7 +472,15 @@ class Canvas(QWidget):
         else:
             shiftPos = pos - point
 
-        if [shape[0].x(), shape[0].y(), shape[2].x(), shape[2].y()] == [
+        # Symmetric resizing with Ctrl
+        is_ctrl_pressed = int(QApplication.keyboardModifiers()) == Qt.ControlModifier
+
+        if len(shape.points) == 4 and [
+            shape[0].x(),
+            shape[0].y(),
+            shape[2].x(),
+            shape[2].y(),
+        ] == [
             shape[3].x(),
             shape[1].y(),
             shape[1].x(),
@@ -492,8 +500,22 @@ class Canvas(QWidget):
             shape.moveVertexBy(rindex, rshift)
             shape.moveVertexBy(lindex, lshift)
 
+            if is_ctrl_pressed:
+                opp_index = (index + 2) % 4
+                shape.moveVertexBy(opp_index, -shiftPos)
+                shape.moveVertexBy((opp_index + 1) % 4, -lshift)
+                shape.moveVertexBy((opp_index + 3) % 4, -rshift)
+
         else:
             shape.moveVertexBy(index, shiftPos)
+            if is_ctrl_pressed and len(shape.points) > 1:
+                # Calculate symmetric opposite index for simple shapes
+                if len(shape.points) == 4:
+                    opp_index = (index + 2) % 4
+                    shape.moveVertexBy(opp_index, -shiftPos)
+                elif len(shape.points) == 2:
+                    opp_index = (index + 1) % 2
+                    shape.moveVertexBy(opp_index, -shiftPos)
 
     def boundedMoveShape(self, shapes, pos):
         if type(shapes).__name__ != "list":
