@@ -53,7 +53,6 @@ class Shape(object):
         self,
         label=None,
         line_color=None,
-        difficult=False,
         key_cls="None",
         paintLabel=False,
         paintIdx=False,
@@ -64,7 +63,6 @@ class Shape(object):
         self.points = []
         self.fill = False
         self.selected = False
-        self.difficult = difficult
         self.key_cls = key_cls
         self.paintLabel = paintLabel
         self.paintIdx = paintIdx
@@ -268,7 +266,6 @@ class Shape(object):
             shape.line_color = self.line_color
         if self.fill_color != Shape.fill_color:
             shape.fill_color = self.fill_color
-        shape.difficult = self.difficult
         shape.key_cls = self.key_cls
         return shape
 

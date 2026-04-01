@@ -1229,8 +1229,6 @@ class MainWindow(QMainWindow):
         self.fillColor = None
         self.zoom_level = 100
         self.fit_window = False
-        # Add Chris
-        self.difficult = False
 
         # Fix the compatible issue for qt4 and qt5. Convert the QStringList to python list
         if settings.get(SETTING_RECENT_FILES):
@@ -1265,8 +1263,6 @@ class MainWindow(QMainWindow):
             settings.get(SETTING_FILL_COLOR, DEFAULT_FILL_COLOR)
         )
         self.canvas.setDrawingColor(self.lineColor)
-        # Add chris
-        Shape.difficult = self.difficult
 
         # ADD:
         # Populate the File menu dynamically.
@@ -1834,11 +1830,7 @@ class MainWindow(QMainWindow):
         shape.paintIdx = self.displayIndexOption.isChecked()
 
         item = HashableQListWidgetItem(shape.label)
-        # current difficult checkbox is disable
-        # item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-        # item.setCheckState(Qt.Unchecked) if shape.difficult else item.setCheckState(Qt.Checked)
 
-        # Checked means difficult is False
         # item.setBackground(generateColorByText(shape.label))
         self.itemsToShapes[item] = shape
         self.shapesToItems[shape] = item
@@ -1891,7 +1883,7 @@ class MainWindow(QMainWindow):
     def loadLabels(self, shapes):
         s = []
         shape_index = 0
-        for label, points, line_color, key_cls, difficult in shapes:
+        for label, points, line_color, key_cls in shapes:
             shape = Shape(
                 label=label,
                 line_color=line_color,
@@ -1905,7 +1897,6 @@ class MainWindow(QMainWindow):
                     self.setDirty()
 
                 shape.addPoint(QPointF(x, y))
-            shape.difficult = difficult
             shape.idx = shape_index
             shape_index += 1
             # shape.locked = False
@@ -1962,7 +1953,6 @@ class MainWindow(QMainWindow):
                 line_color=s.line_color.getRgb(),
                 fill_color=s.fill_color.getRgb(),
                 points=[(int(p.x()), int(p.y())) for p in s.points],  # QPonitF
-                difficult=s.difficult,
                 key_cls=s.key_cls,
             )  # bool
 
@@ -1976,7 +1966,7 @@ class MainWindow(QMainWindow):
             ]
         # Can add different annotation formats here
         for box in self.result_dic:
-            trans_dic = {"label": box[1][0], "points": box[0], "difficult": False}
+            trans_dic = {"label": box[1][0], "points": box[0]}
             if self.kie_mode:
                 if len(box) == 3:
                     trans_dic.update({"key_cls": box[2]})
@@ -1992,7 +1982,7 @@ class MainWindow(QMainWindow):
                 trans_dict = {
                     "transcription": box["label"],
                     "points": box["points"],
-                    "difficult": box["difficult"],
+                    "difficult": False,
                 }
                 if self.kie_mode:
                     trans_dict.update({"key_cls": box["key_cls"]})
@@ -2070,14 +2060,6 @@ class MainWindow(QMainWindow):
                 shape.label = item.text()
                 # shape.line_color = generateColorByText(shape.label)
                 self.setDirty()
-            elif not ((item.checkState() == Qt.Unchecked) ^ (not shape.difficult)):
-                shape.difficult = True if item.checkState() == Qt.Unchecked else False
-                self.setDirty()
-            else:  # User probably changed item visibility
-                self.canvas.setShapeVisible(
-                    shape, True
-                )  # item.checkState() == Qt.Checked
-                # self.actions.save.setEnabled(True)
         else:
             logger.warning(
                 "enter labelItemChanged slot with unhashable item: %s %s",
@@ -2425,7 +2407,6 @@ class MainWindow(QMainWindow):
                         [[s[0] * width, s[1] * height] for s in box["ratio"]],
                         DEFAULT_LOCK_COLOR,
                         key_cls,
-                        box["difficult"],
                     )
                 )
             else:
@@ -2435,7 +2416,6 @@ class MainWindow(QMainWindow):
                         [[s[0] * width, s[1] * height] for s in box["ratio"]],
                         DEFAULT_LOCK_COLOR,
                         key_cls,
-                        box["difficult"],
                     )
                 )
         if img_idx in self.PPlabel.keys():
@@ -2447,7 +2427,6 @@ class MainWindow(QMainWindow):
                         box["points"],
                         None,
                         key_cls,
-                        box.get("difficult", False),
                     )
                 )
 
@@ -3333,7 +3312,6 @@ class MainWindow(QMainWindow):
                     # If not, fix them.
                     x, y, _ = self.canvas.snapPointToCanvas(x, y)
                     shape.addPoint(QPointF(x, y))
-                shape.difficult = False
                 shape.idx = order_index
                 order_index += 1
                 # shape.locked = False
@@ -3703,8 +3681,6 @@ class MainWindow(QMainWindow):
                         np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_COLOR
                     )
                     for i, label in enumerate(self.PPlabel[idx]):
-                        if label["difficult"]:
-                            continue
                         img_crop = get_rotate_crop_image(
                             img, np.array(label["points"], np.float32)
                         )
@@ -3818,7 +3794,6 @@ class MainWindow(QMainWindow):
                 ratio=[
                     [int(p.x()) / width, int(p.y()) / height] for p in s.points
                 ],  # QPonitF
-                difficult=s.difficult,  # bool
                 key_cls=s.key_cls,  # bool
             )
 
@@ -3833,7 +3808,7 @@ class MainWindow(QMainWindow):
                 trans_dict = {
                     "transcription": box["label"],
                     "ratio": box["ratio"],
-                    "difficult": box["difficult"],
+                    "difficult": False,
                 }
                 if self.kie_mode:
                     trans_dict.update({"key_cls": box["key_cls"]})

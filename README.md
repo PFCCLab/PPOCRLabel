@@ -168,7 +168,7 @@ PPOCRLabel.exe --lang ch
 
 6. Click 're-Recognition', model will rewrite ALL recognition results in ALL detection box<sup>[3]</sup>.
 
-7. Single click the result in 'recognition result' list to manually change inaccurate recognition results.
+7. Single click the result in 'recognition result' list to manually change inaccurate recognition results. **Note:** If the text is illegible or extremely blurry, it is recommended to change the label to `###`. The PaddleOCR training pipeline will treat these as "ignore" regions, ensuring they don't negatively impact your model's fine-tuning.
 
 8. **Click "Check", the image status will switch to "√",then the program automatically jump to the next.**
 
@@ -177,6 +177,8 @@ PPOCRLabel.exe --lang ch
 10. Labeling result: the user can export the label result manually through the menu "File - Export Label", while the program will also export automatically if "File - Auto export Label Mode" is selected. The manually checked label will be stored in *Label.txt* under the opened picture folder. Click "File"-"Export Recognition Results" in the menu bar, the recognition training data of such pictures will be saved in the *crop_img* folder, and the recognition label will be saved in *rec_gt.txt*<sup>[4]</sup>.
 
 11. Additional Feature Description
+    - **The "###" vs "*":** The core **PaddleOCR detection training pipeline** ignores boolean flags and specifically looks for the transcription string `###` or `*` to identify regions that should be ignored. For maximum compatibility with all fine-tuning stages (both Detection and Recognition), always use `###` for unreadable text.
+    - **The "difficult" flag:** You may notice a `difficult` field in the exported `Label.txt`. This is a legacy field from the original `labelImg` tool. In this version of PPOCRLabel, this field is **hardcoded to `False`** for all exported labels to ensure backward compatibility with third-party data pipelines and older versions of the application while preventing unintended data exclusion during training exports.
     - `File` -> `Re-recognition`: After checking, the newly annotated box content will automatically trigger the `Re-recognition` function of the current annotation box, eliminating the need to click the Re-identify button. This is suitable for scenarios where you do not want to use Automatic Annotation but prefer manual annotation, such as license plate recognition. In a single image with only one license plate, using Automatic Annotation would require deleting many additional recognized text boxes, which is less efficient than directly re-annotating.
     - `File` -> `Auto Save Unsaved changes`: By default, you need to press the `Check` button to complete the marking confirmation for the current box, which can be cumbersome. After checking, when switching to the next image (by pressing the shortcut key `D`), a prompt box asking to confirm whether to save unconfirmed markings will no longer appear. The current markings will be automatically saved and the next image will be switched, making it convenient for quick marking.
     - After selecting the bounding box, there are 5 shortcut keys available to individually control the movement of the four vertices of the bounding box, suitable for scenarios that require precise control over the positions of the bounding box vertices:
