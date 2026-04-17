@@ -3113,87 +3113,27 @@ class MainWindow(QMainWindow):
 
     def reRecognition(self):
         img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
-        if self.canvas.shapes:
-            self.result_dic = []
-            self.result_dic_locked = (
-                []
-            )  # result_dic_locked stores the ocr result of self.canvas.lockedShapes
-            rec_flag = 0
-            for shape in self.canvas.shapes:
-                box = [[int(p.x()), int(p.y())] for p in shape.points]
-                kie_cls = shape.key_cls
+        if img is None:
+            return
+        self.result_dic = []
+        self.result_dic_locked = []
+        h, w, _ = img.shape
+        if h > 32 and w > 32:
+            result = self.ocr.predict(img)[0]
+            for poly, text, score in zip(
+                result["rec_polys"],
+                result["rec_texts"],
+                result["rec_scores"],
+            ):
+                # Convert numpy array to list for JSON serialization
+                poly_list = poly.tolist() if hasattr(poly, "tolist") else poly
+                self.result_dic.append([poly_list, (text, score)])
 
-                if len(box) > 4:
-                    box = self.gen_quad_from_poly(np.array(box))
-                assert len(box) == 4
-
-                img_crop = get_rotate_crop_image(img, np.array(box, np.float32))
-                if img_crop is None:
-                    msg = (
-                        "Can not recognise the detection box in "
-                        + self.filePath
-                        + ". Please change manually"
-                    )
-                    QMessageBox.information(self, "Information", msg)
-                    return
-                result = self.text_recognizer.predict(img_crop)[0]
-                storage = [(result["rec_text"], result["rec_score"])]
-                if result["rec_text"] != "":
-                    if shape.line_color == DEFAULT_LOCK_COLOR:
-                        shape.label = result["rec_text"]
-                        storage.insert(0, box)
-                        if self.kie_mode:
-                            storage.append(kie_cls)
-                        self.result_dic_locked.append(storage)
-                    else:
-                        storage.insert(0, box)
-                        if self.kie_mode:
-                            storage.append(kie_cls)
-                        self.result_dic.append(storage)
-                else:
-                    logger.warning("Can not recognise the box")
-                    if shape.line_color == DEFAULT_LOCK_COLOR:
-                        shape.label = result["rec_text"]
-                        if self.kie_mode:
-                            self.result_dic_locked.append(
-                                [box, (self.noLabelText, 0), kie_cls]
-                            )
-                        else:
-                            self.result_dic_locked.append([box, (self.noLabelText, 0)])
-                    else:
-                        if self.kie_mode:
-                            self.result_dic.append(
-                                [box, (self.noLabelText, 0), kie_cls]
-                            )
-                        else:
-                            self.result_dic.append([box, (self.noLabelText, 0)])
-                try:
-                    if (
-                        self.noLabelText == shape.label
-                        or result["rec_text"] == shape.label
-                    ):
-                        logger.debug("label no change")
-                    else:
-                        rec_flag += 1
-                except IndexError as e:
-                    logger.warning("Can not recognise the box")
-            if (len(self.result_dic) > 0 and rec_flag > 0) or self.canvas.lockedShapes:
-                self.canvas.isInTheSameImage = True
-                self.saveFile(mode="Auto")
-                self.loadFile(self.filePath, isAdjustScale=False)
-                self.canvas.isInTheSameImage = False
-                self.setDirty()
-            elif len(self.result_dic) == len(self.canvas.shapes) and rec_flag == 0:
-                if self.lang == "ch":
-                    QMessageBox.information(self, "Information", "识别结果保持一致！")
-                else:
-                    QMessageBox.information(
-                        self, "Information", "The recognition result remains unchanged!"
-                    )
-            else:
-                logger.warning("Can not recognise in %s", self.filePath)
-        else:
-            QMessageBox.information(self, "Information", "Draw a box!")
+        self.canvas.isInTheSameImage = True
+        self.saveFile(mode="Auto")
+        self.loadFile(self.filePath, isAdjustScale=False)
+        self.canvas.isInTheSameImage = False
+        self.setDirty()
 
     def singleRerecognition(self):
         img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
