@@ -789,6 +789,15 @@ class MainWindow(QMainWindow):
             enabled=False,
         )
 
+        autoRecCurrent = action(
+            get_str("autoRecognitionCurrent"),
+            self.autoRecognitionCurrent,
+            None,
+            "Auto",
+            get_str("autoRecognitionCurrent"),
+            enabled=False,
+        )
+
         reRec = action(
             get_str("reRecognition"),
             self.reRecognition,
@@ -1026,6 +1035,7 @@ class MainWindow(QMainWindow):
             saveRec=saveRec,
             singleRere=singleRere,
             AutoRec=AutoRec,
+            autoRecCurrent=autoRecCurrent,
             reRec=reRec,
             cellreRec=cellreRec,
             createMode=createMode,
@@ -1209,7 +1219,10 @@ class MainWindow(QMainWindow):
             ),
         )
 
-        addActions(self.menus.autolabel, (AutoRec, reRec, cellreRec, alcm, None, help))
+        addActions(
+            self.menus.autolabel,
+            (AutoRec, autoRecCurrent, reRec, cellreRec, alcm, None, help),
+        )
 
         self.menus.file.aboutToShow.connect(self.updateFileMenu)
 
@@ -2676,6 +2689,7 @@ class MainWindow(QMainWindow):
         self.reRecogButton.setEnabled(True)
         self.tableRecButton.setEnabled(True)
         self.actions.AutoRec.setEnabled(True)
+        self.actions.autoRecCurrent.setEnabled(True)
         self.actions.reRec.setEnabled(True)
         self.actions.tableRec.setEnabled(True)
         self.actions.open_dataset_dir.setEnabled(True)
@@ -3194,6 +3208,46 @@ class MainWindow(QMainWindow):
                 logger.warning("Can not recognise in %s", self.filePath)
         else:
             QMessageBox.information(self, "Information", "Draw a box!")
+
+    def autoRecognitionCurrent(self):
+        if self.canvas.shapes:
+            msg = (
+                "This will delete all existing boxes and re-detect the image. Do you want to continue?"
+                if self.lang != "ch"
+                else "这将删除所有现有的标注框并重新检测图像。您要继续吗？"
+            )
+            reply = QMessageBox.question(
+                self,
+                "Warning",
+                msg,
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if reply == QMessageBox.No:
+                return
+
+        img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
+        if img is None:
+            return
+        self.result_dic = []
+        self.result_dic_locked = []
+        h, w, _ = img.shape
+        if h > 32 and w > 32:
+            result = self.ocr.predict(img)[0]
+            for poly, text, score in zip(
+                result["rec_polys"],
+                result["rec_texts"],
+                result["rec_scores"],
+            ):
+                # Convert numpy array to list for JSON serialization
+                poly_list = poly.tolist() if hasattr(poly, "tolist") else poly
+                self.result_dic.append([poly_list, (text, score)])
+
+        self.canvas.isInTheSameImage = True
+        self.saveFile(mode="Auto")
+        self.loadFile(self.filePath, isAdjustScale=False)
+        self.canvas.isInTheSameImage = False
+        self.setDirty()
 
     def singleRerecognition(self):
         img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
