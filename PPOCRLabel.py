@@ -1362,7 +1362,8 @@ class MainWindow(QMainWindow):
         self.labelList.setCurrentRow(next_row)
         self.labelList.scrollToItem(self.labelList.item(next_row))
         self.labelSelectionChanged()
-    
+        self.focusAndZoom()        # ← Ctrl+G'nin yaptığı
+        self.labelList.activate_edit()  # ← F2'nin yaptığı
 
     def noShapes(self):
         return not self.itemsToShapes
