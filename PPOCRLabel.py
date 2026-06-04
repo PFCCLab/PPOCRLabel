@@ -22,7 +22,11 @@ import platform
 import signal
 import subprocess
 import sys
+import torch
+
 from functools import partial
+from PyQt5.QtWidgets import QShortcut
+from PyQt5.QtGui import QKeySequence
 
 import openpyxl
 import cv2
@@ -1178,6 +1182,10 @@ class MainWindow(QMainWindow):
         )
         self.displayIndexOption.setChecked(settings.get(SETTING_PAINT_INDEX, False))
         self.autoSaveUnsavedChangesOption.triggered.connect(self.autoSaveFunc)
+        
+        QShortcut(QKeySequence(Qt.Key_Tab), self, activated=lambda: self._navigateLabel(+1))
+        QShortcut(QKeySequence("Shift+Tab"), self, activated=lambda: self._navigateLabel(-1))
+        QShortcut(QKeySequence(Qt.Key_F2), self, activated=lambda: self.labelList.activate_edit() if self.currentItem() else None)
 
         addActions(
             self.menus.file,
@@ -1331,6 +1339,30 @@ class MainWindow(QMainWindow):
         if event.key() == Qt.Key_Control:
             # Draw rectangle if Ctrl is pressed
             self.canvas.setDrawingShapeToSquare(True)
+        elif event.key() == Qt.Key_Tab and not event.modifiers() & Qt.ShiftModifier:
+            self._navigateLabel(+1)
+            event.accept()
+        elif event.key() == Qt.Key_Tab and event.modifiers() & Qt.ShiftModifier:
+            self._navigateLabel(-1)
+            event.accept()
+        elif event.key() in (Qt.Key_F2, Qt.Key_Return, Qt.Key_Enter):
+            if self.currentItem() is not None:
+                self.labelList.activate_edit()
+                event.accept()
+
+    def _navigateLabel(self, direction):
+        count = self.labelList.count()
+        if count == 0:
+            return
+        current = self.labelList.currentRow()
+        if current < 0:
+            next_row = 0 if direction > 0 else count - 1
+        else:
+            next_row = (current + direction) % count
+        self.labelList.setCurrentRow(next_row)
+        self.labelList.scrollToItem(self.labelList.item(next_row))
+        self.labelSelectionChanged()
+    
 
     def noShapes(self):
         return not self.itemsToShapes

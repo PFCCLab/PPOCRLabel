@@ -26,8 +26,28 @@ class EditInList(QListWidget):
     def leaveEvent(self, event):
         pass
 
+    def activate_edit(self):
+        """Open persistent editor for the currently selected item (called by F2)."""
+        item = self.currentItem()
+        if item is None:
+            return
+        if self.edited_item is not None:
+            try:
+                self.closePersistentEditor(self.edited_item)
+            except Exception:
+                pass
+        self.edited_item = item
+        self.openPersistentEditor(item)
+        self.editItem(item)
+    
     def keyPressEvent(self, event) -> None:
         # close edit
-        if event.key() in [16777220, 16777221]:
+        if event.key() in [16777220, 16777221]:  # Enter / Return
             for i in range(self.count()):
                 self.closePersistentEditor(self.item(i))
+            # bir sonraki satıra geç ve editörü aç
+            next_row = self.currentRow() + 1
+            if next_row < self.count():
+                self.setCurrentRow(next_row)
+                self.scrollToItem(self.item(next_row))
+                self.activate_edit()
