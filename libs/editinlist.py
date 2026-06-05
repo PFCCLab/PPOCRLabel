@@ -68,6 +68,10 @@ class EditInList(QListWidget):
         return super().eventFilter(obj, event)
 
     def _close_editors(self):
+        if self.edited_item is not None:
+            editor = self.indexWidget(self.indexFromItem(self.edited_item))
+            if editor is not None:
+                self.commitData(editor)  # flush editor value to model before closing
         for i in range(self.count()):
             self.closePersistentEditor(self.item(i))
         self.edited_item = None
