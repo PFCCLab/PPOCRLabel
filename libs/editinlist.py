@@ -40,10 +40,37 @@ class EditInList(QListWidget):
         self.openPersistentEditor(item)
         self.editItem(item)
 
+    def _close_editors(self):
+        for i in range(self.count()):
+            self.closePersistentEditor(self.item(i))
+        self.edited_item = None
+
     def keyPressEvent(self, event) -> None:
-        if event.key() in [16777220, 16777221]:  # Enter / Return
-            for i in range(self.count()):
-                self.closePersistentEditor(self.item(i))
+        key = event.key()
+        if key in (16777220, 16777221):  # Enter / Return: save and move to next
+            self._close_editors()
+            next_row = self.currentRow() + 1
+            if next_row < self.count():
+                self.setCurrentRow(next_row)
+                self.scrollToItem(self.item(next_row))
+            event.accept()
+            return
+        if key == 16777217:  # Tab: save, move to next, open editor
+            self._close_editors()
+            next_row = self.currentRow() + 1
+            if next_row < self.count():
+                self.setCurrentRow(next_row)
+                self.scrollToItem(self.item(next_row))
+                self.activate_edit()
+            event.accept()
+            return
+        if key == 16777218:  # Shift+Tab / Backtab: save, move to previous, open editor
+            self._close_editors()
+            prev_row = self.currentRow() - 1
+            if prev_row >= 0:
+                self.setCurrentRow(prev_row)
+                self.scrollToItem(self.item(prev_row))
+                self.activate_edit()
             event.accept()
             return
         super().keyPressEvent(event)
