@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-from PyQt5.QtCore import QModelIndex
+from PyQt5.QtCore import QEvent, QModelIndex
 from PyQt5.QtWidgets import QListWidget
 
 
@@ -39,6 +39,33 @@ class EditInList(QListWidget):
         self.edited_item = item
         self.openPersistentEditor(item)
         self.editItem(item)
+        # Intercept Tab/Shift+Tab inside the editor widget before QLineEdit consumes them
+        editor = self.indexWidget(self.indexFromItem(item))
+        if editor is not None:
+            editor.installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.KeyPress:
+            key = event.key()
+            if key == 16777217:  # Tab: save, move to next, open editor
+                self._close_editors()
+                next_row = self.currentRow() + 1
+                if next_row < self.count():
+                    self.setCurrentRow(next_row)
+                    self.scrollToItem(self.item(next_row))
+                    self.activate_edit()
+                return True
+            if (
+                key == 16777218
+            ):  # Shift+Tab / Backtab: save, move to previous, open editor
+                self._close_editors()
+                prev_row = self.currentRow() - 1
+                if prev_row >= 0:
+                    self.setCurrentRow(prev_row)
+                    self.scrollToItem(self.item(prev_row))
+                    self.activate_edit()
+                return True
+        return super().eventFilter(obj, event)
 
     def _close_editors(self):
         for i in range(self.count()):
@@ -53,24 +80,6 @@ class EditInList(QListWidget):
             if next_row < self.count():
                 self.setCurrentRow(next_row)
                 self.scrollToItem(self.item(next_row))
-            event.accept()
-            return
-        if key == 16777217:  # Tab: save, move to next, open editor
-            self._close_editors()
-            next_row = self.currentRow() + 1
-            if next_row < self.count():
-                self.setCurrentRow(next_row)
-                self.scrollToItem(self.item(next_row))
-                self.activate_edit()
-            event.accept()
-            return
-        if key == 16777218:  # Shift+Tab / Backtab: save, move to previous, open editor
-            self._close_editors()
-            prev_row = self.currentRow() - 1
-            if prev_row >= 0:
-                self.setCurrentRow(prev_row)
-                self.scrollToItem(self.item(prev_row))
-                self.activate_edit()
             event.accept()
             return
         super().keyPressEvent(event)
