@@ -3,6 +3,7 @@
 from PyQt5.QtCore import QModelIndex
 from PyQt5.QtWidgets import QListWidget
 
+
 class EditInList(QListWidget):
     def __init__(self):
         super(EditInList, self).__init__()
@@ -38,15 +39,11 @@ class EditInList(QListWidget):
         self.edited_item = item
         self.openPersistentEditor(item)
         self.editItem(item)
-    
+
     def keyPressEvent(self, event) -> None:
-        # close edit
-        if event.key() in [16777220, 16777221, 16777217]:  # Enter / Return / Tab
+        if event.key() in [16777220, 16777221]:  # Enter / Return
             for i in range(self.count()):
                 self.closePersistentEditor(self.item(i))
-            # bir sonraki satıra geç ve editörü aç
-            next_row = self.currentRow() + 1
-            if next_row < self.count():
-                self.setCurrentRow(next_row)
-                self.scrollToItem(self.item(next_row))
-                self.activate_edit()
+            event.accept()
+            return
+        super().keyPressEvent(event)

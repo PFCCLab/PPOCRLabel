@@ -22,8 +22,6 @@ import platform
 import signal
 import subprocess
 import sys
-import torch
-
 from functools import partial
 from PyQt5.QtWidgets import QShortcut
 from PyQt5.QtGui import QKeySequence
@@ -1182,10 +1180,20 @@ class MainWindow(QMainWindow):
         )
         self.displayIndexOption.setChecked(settings.get(SETTING_PAINT_INDEX, False))
         self.autoSaveUnsavedChangesOption.triggered.connect(self.autoSaveFunc)
-        
-        QShortcut(QKeySequence(Qt.Key_Tab), self, activated=lambda: self._navigateLabel(+1))
-        QShortcut(QKeySequence("Shift+Tab"), self, activated=lambda: self._navigateLabel(-1))
-        QShortcut(QKeySequence(Qt.Key_F2), self, activated=lambda: self.labelList.activate_edit() if self.currentItem() else None)
+
+        QShortcut(
+            QKeySequence(Qt.Key_Tab), self, activated=lambda: self._navigateLabel(+1)
+        )
+        QShortcut(
+            QKeySequence("Shift+Tab"), self, activated=lambda: self._navigateLabel(-1)
+        )
+        QShortcut(
+            QKeySequence(Qt.Key_F2),
+            self,
+            activated=lambda: (
+                self.labelList.activate_edit() if self.currentItem() else None
+            ),
+        )
 
         addActions(
             self.menus.file,
@@ -1361,9 +1369,7 @@ class MainWindow(QMainWindow):
             next_row = (current + direction) % count
         self.labelList.setCurrentRow(next_row)
         self.labelList.scrollToItem(self.labelList.item(next_row))
-        self.labelSelectionChanged()
-        self.focusAndZoom()        # ← Ctrl+G'nin yaptığı
-        self.labelList.activate_edit()  # ← F2'nin yaptığı
+        self.focusAndZoom()
 
     def noShapes(self):
         return not self.itemsToShapes
@@ -2621,7 +2627,9 @@ class MainWindow(QMainWindow):
 
         else:
             if self.lang == "ch":
-                self.msgBox.warning(self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!")
+                self.msgBox.warning(
+                    self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!"
+                )
             else:
                 self.msgBox.warning(
                     self,
