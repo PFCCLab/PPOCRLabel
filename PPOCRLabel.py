@@ -1182,12 +1182,6 @@ class MainWindow(QMainWindow):
         self.autoSaveUnsavedChangesOption.triggered.connect(self.autoSaveFunc)
 
         QShortcut(
-            QKeySequence(Qt.Key_Tab), self, activated=lambda: self._navigateLabel(+1)
-        )
-        QShortcut(
-            QKeySequence("Shift+Tab"), self, activated=lambda: self._navigateLabel(-1)
-        )
-        QShortcut(
             QKeySequence(Qt.Key_F2),
             self,
             activated=lambda: (
@@ -1347,12 +1341,6 @@ class MainWindow(QMainWindow):
         if event.key() == Qt.Key_Control:
             # Draw rectangle if Ctrl is pressed
             self.canvas.setDrawingShapeToSquare(True)
-        elif event.key() == Qt.Key_Tab and not event.modifiers() & Qt.ShiftModifier:
-            self._navigateLabel(+1)
-            event.accept()
-        elif event.key() == Qt.Key_Tab and event.modifiers() & Qt.ShiftModifier:
-            self._navigateLabel(-1)
-            event.accept()
         elif event.key() in (Qt.Key_F2, Qt.Key_Return, Qt.Key_Enter):
             if self.currentItem() is not None:
                 self.labelList.activate_edit()

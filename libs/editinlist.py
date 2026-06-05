@@ -39,16 +39,28 @@ class EditInList(QListWidget):
         self.edited_item = item
         self.openPersistentEditor(item)
         self.editItem(item)
-        # Intercept Tab/Shift+Tab inside the editor widget before QLineEdit consumes them
         editor = self.indexWidget(self.indexFromItem(item))
         if editor is not None:
             editor.installEventFilter(self)
 
+    def _commit_and_close(self):
+        """Commit current editor value to the model, then close all editors."""
+        if self.edited_item is not None:
+            editor = self.indexWidget(self.indexFromItem(self.edited_item))
+            if editor is not None:
+                self.commitData(editor)
+        for i in range(self.count()):
+            self.closePersistentEditor(self.item(i))
+        self.edited_item = None
+
     def eventFilter(self, obj, event):
+        """Intercept Tab/Shift+Tab inside the persistent editor (QLineEdit).
+        QShortcut would fire before the editor receives the key, so Tab
+        navigation is handled here instead of via QShortcut."""
         if event.type() == QEvent.KeyPress:
             key = event.key()
-            if key == 16777217:  # Tab: save, move to next, open editor
-                self._close_editors()
+            if key == 16777217:  # Tab: commit, move to next, open editor
+                self._commit_and_close()
                 next_row = self.currentRow() + 1
                 if next_row < self.count():
                     self.setCurrentRow(next_row)
@@ -57,8 +69,8 @@ class EditInList(QListWidget):
                 return True
             if (
                 key == 16777218
-            ):  # Shift+Tab / Backtab: save, move to previous, open editor
-                self._close_editors()
+            ):  # Shift+Tab / Backtab: commit, move to previous, open editor
+                self._commit_and_close()
                 prev_row = self.currentRow() - 1
                 if prev_row >= 0:
                     self.setCurrentRow(prev_row)
@@ -67,23 +79,28 @@ class EditInList(QListWidget):
                 return True
         return super().eventFilter(obj, event)
 
-    def _close_editors(self):
-        if self.edited_item is not None:
-            editor = self.indexWidget(self.indexFromItem(self.edited_item))
-            if editor is not None:
-                self.commitData(editor)  # flush editor value to model before closing
-        for i in range(self.count()):
-            self.closePersistentEditor(self.item(i))
-        self.edited_item = None
-
     def keyPressEvent(self, event) -> None:
         key = event.key()
-        if key in (16777220, 16777221):  # Enter / Return: save and move to next
-            self._close_editors()
+        if key in (16777220, 16777221):  # Enter / Return: commit and move to next
+            self._commit_and_close()
             next_row = self.currentRow() + 1
             if next_row < self.count():
                 self.setCurrentRow(next_row)
                 self.scrollToItem(self.item(next_row))
+            event.accept()
+            return
+        if key == 16777217:  # Tab (no editor open): just navigate
+            next_row = self.currentRow() + 1
+            if next_row < self.count():
+                self.setCurrentRow(next_row)
+                self.scrollToItem(self.item(next_row))
+            event.accept()
+            return
+        if key == 16777218:  # Shift+Tab (no editor open): just navigate back
+            prev_row = self.currentRow() - 1
+            if prev_row >= 0:
+                self.setCurrentRow(prev_row)
+                self.scrollToItem(self.item(prev_row))
             event.accept()
             return
         super().keyPressEvent(event)
