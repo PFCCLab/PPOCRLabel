@@ -53,19 +53,19 @@ class EditInList(QListWidget):
             QApplication.instance().removeEventFilter(self)
             self._app_filter_active = False
 
-    def _editor_text(self):
-        """Return current text from whichever QLineEdit child is visible."""
-        for child in self.findChildren(QLineEdit):
-            if child.isVisible():
-                return child.text()
-        return None
-
     def _save_and_close(self):
         """Write editor text back to the item, then close all editors."""
         if self.edited_item is not None:
-            text = self._editor_text()
-            if text is not None:
-                self.edited_item.setText(text)
+            # Use the currently focused widget — guaranteed to be what user typed in
+            focused = QApplication.focusWidget()
+            if isinstance(focused, QLineEdit):
+                self.edited_item.setText(focused.text())
+            else:
+                # Fallback: search visible QLineEdit children
+                for child in self.findChildren(QLineEdit):
+                    if child.isVisible():
+                        self.edited_item.setText(child.text())
+                        break
         self._remove_app_filter()
         for i in range(self.count()):
             self.closePersistentEditor(self.item(i))
