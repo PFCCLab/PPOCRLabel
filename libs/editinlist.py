@@ -1,10 +1,12 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-from PyQt5.QtCore import QEvent, QModelIndex
+from PyQt5.QtCore import QEvent, QModelIndex, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QLineEdit, QListWidget
 
 
 class EditInList(QListWidget):
+    navigated = pyqtSignal()  # emitted after Tab/Shift+Tab navigation
+
     def __init__(self):
         super(EditInList, self).__init__()
         self.edited_item = None
@@ -84,6 +86,7 @@ class EditInList(QListWidget):
                         self.setCurrentRow(next_row)
                         self.scrollToItem(self.item(next_row))
                         self.activate_edit()
+                        self.navigated.emit()
                     return True
                 if key == 16777218:  # Shift+Tab: save, move to previous, open editor
                     self._save_and_close()
@@ -92,6 +95,7 @@ class EditInList(QListWidget):
                         self.setCurrentRow(prev_row)
                         self.scrollToItem(self.item(prev_row))
                         self.activate_edit()
+                        self.navigated.emit()
                     return True
         return False
 
@@ -110,6 +114,7 @@ class EditInList(QListWidget):
             if next_row < self.count():
                 self.setCurrentRow(next_row)
                 self.scrollToItem(self.item(next_row))
+                self.navigated.emit()
             event.accept()
             return
         if key == 16777218:  # Shift+Tab with no editor open: navigate back
@@ -117,6 +122,7 @@ class EditInList(QListWidget):
             if prev_row >= 0:
                 self.setCurrentRow(prev_row)
                 self.scrollToItem(self.item(prev_row))
+                self.navigated.emit()
             event.accept()
             return
         super().keyPressEvent(event)
