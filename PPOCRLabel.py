@@ -1970,7 +1970,9 @@ class MainWindow(QMainWindow):
     def loadLabels(self, shapes):
         s = []
         shape_index = 0
-        for label, points, line_color, key_cls in shapes:
+        for item in shapes:
+            label, points, line_color, key_cls = item[:4]
+            score = item[4] if len(item) > 4 else None
             shape = Shape(
                 label=label,
                 line_color=line_color,
@@ -1986,7 +1988,7 @@ class MainWindow(QMainWindow):
                 shape.addPoint(QPointF(x, y))
             shape.idx = shape_index
             shape_index += 1
-            # shape.locked = False
+            shape.score = score
             shape.close()
             s.append(shape)
 
@@ -2035,13 +2037,16 @@ class MainWindow(QMainWindow):
 
         def format_shape(s):
             # print('s in saveLabels is ',s)
-            return dict(
+            d = dict(
                 label=s.label,  # str
                 line_color=s.line_color.getRgb(),
                 fill_color=s.fill_color.getRgb(),
                 points=[(int(p.x()), int(p.y())) for p in s.points],  # QPonitF
                 key_cls=s.key_cls,
-            )  # bool
+            )
+            if s.score is not None:
+                d["score"] = round(float(s.score), 4)
+            return d
 
         if mode == "Auto":
             shapes = []
@@ -2053,7 +2058,7 @@ class MainWindow(QMainWindow):
             ]
         # Can add different annotation formats here
         for box in self.result_dic:
-            trans_dic = {"label": box[1][0], "points": box[0]}
+            trans_dic = {"label": box[1][0], "points": box[0], "score": box[1][1]}
             if self.kie_mode:
                 if len(box) == 3:
                     trans_dic.update({"key_cls": box[2]})
@@ -2071,6 +2076,8 @@ class MainWindow(QMainWindow):
                     "points": box["points"],
                     "difficult": False,
                 }
+                if box.get("score") is not None:
+                    trans_dict["score"] = round(float(box["score"]), 4)
                 if self.kie_mode:
                     trans_dict.update({"key_cls": box["key_cls"]})
                 trans_dic.append(trans_dict)
@@ -2494,6 +2501,7 @@ class MainWindow(QMainWindow):
                         [[s[0] * width, s[1] * height] for s in box["ratio"]],
                         DEFAULT_LOCK_COLOR,
                         key_cls,
+                        None,
                     )
                 )
             else:
@@ -2503,6 +2511,7 @@ class MainWindow(QMainWindow):
                         [[s[0] * width, s[1] * height] for s in box["ratio"]],
                         DEFAULT_LOCK_COLOR,
                         key_cls,
+                        None,
                     )
                 )
         if img_idx in self.PPlabel.keys():
@@ -2514,12 +2523,14 @@ class MainWindow(QMainWindow):
                         box["points"],
                         None,
                         key_cls,
+                        box.get("score"),
                     )
                 )
 
         if shapes:
             self.loadLabels(shapes)
             self.canvas.verified = False
+            self.applyConfidenceFilter()
 
     def validFilestate(self, filePath):
         if filePath in self.fileStatedict.keys() and self.fileStatedict[filePath] == 1:
