@@ -484,6 +484,35 @@ class MainWindow(QMainWindow):
         self.imageSliderDock.setAttribute(Qt.WA_TranslucentBackground)
         self.addDockWidget(Qt.RightDockWidgetArea, self.imageSliderDock)
 
+        #  ================== Confidence Filter ==================
+        self.confidenceSlider = QSlider(Qt.Horizontal)
+        self.confidenceSlider.setMinimum(0)
+        self.confidenceSlider.setMaximum(100)
+        self.confidenceSlider.setValue(100)
+        self.confidenceSlider.setSingleStep(1)
+        self.confidenceSlider.setToolTip(
+            "Show only boxes with confidence BELOW this threshold"
+        )
+        self.confidenceSlider.valueChanged.connect(self.onConfidenceFilterChanged)
+
+        self.confidenceLabel = QLabel("Threshold: 1.00  (show all)")
+        self.confidenceLabel.setAlignment(Qt.AlignCenter)
+
+        confWidget = QWidget()
+        confLayout = QVBoxLayout()
+        confLayout.setContentsMargins(4, 4, 4, 4)
+        confLayout.addWidget(self.confidenceLabel)
+        confLayout.addWidget(self.confidenceSlider)
+        confWidget.setLayout(confLayout)
+
+        self.confidenceFilterDock = QDockWidget("Confidence Filter", self)
+        self.confidenceFilterDock.setObjectName("ConfidenceFilter")
+        self.confidenceFilterDock.setWidget(confWidget)
+        self.confidenceFilterDock.setFeatures(
+            QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetClosable
+        )
+        self.addDockWidget(Qt.RightDockWidgetArea, self.confidenceFilterDock)
+
         self.zoomWidget = ZoomWidget()
         self.colorDialog = ColorDialog(parent=self)
         self.zoomWidgetValue = self.zoomWidget.value()
@@ -1358,6 +1387,23 @@ class MainWindow(QMainWindow):
         self.labelList.setCurrentRow(next_row)
         self.labelList.scrollToItem(self.labelList.item(next_row))
         self.focusAndZoom()
+
+    def onConfidenceFilterChanged(self, value):
+        threshold = value / 100.0
+        if value == 100:
+            self.confidenceLabel.setText("Threshold: 1.00  (show all)")
+        else:
+            self.confidenceLabel.setText(f"Threshold: {threshold:.2f}")
+        self.applyConfidenceFilter()
+
+    def applyConfidenceFilter(self):
+        threshold = self.confidenceSlider.value() / 100.0
+        for shape in self.canvas.shapes:
+            if shape.score is None:
+                self.canvas.setShapeVisible(shape, True)
+            else:
+                self.canvas.setShapeVisible(shape, shape.score < threshold)
+        self.canvas.update()
 
     def noShapes(self):
         return not self.itemsToShapes
@@ -3277,6 +3323,9 @@ class MainWindow(QMainWindow):
         self.loadFile(self.filePath, isAdjustScale=False)
         self.canvas.isInTheSameImage = False
         self.setDirty()
+        for shape, box in zip(self.canvas.shapes, self.result_dic):
+            shape.score = box[1][1]
+        self.applyConfidenceFilter()
 
     def singleRerecognition(self):
         img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)

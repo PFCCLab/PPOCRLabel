@@ -77,6 +77,7 @@ class Shape(object):
             self.MOVE_VERTEX: (1.5, self.P_SQUARE),
         }
         self.fontsize = 8
+        self.score = None  # OCR confidence score (0.0-1.0), None if unknown
 
         self._closed = False
         self.font_family = font_family
