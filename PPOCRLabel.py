@@ -401,6 +401,7 @@ class MainWindow(QMainWindow):
         labelListContainer.setLayout(listLayout)
         self.labelList.itemSelectionChanged.connect(self.labelSelectionChanged)
         self.labelList.clicked.connect(self.labelList.item_clicked)
+        self.labelList.navigated.connect(self.focusAndZoom)
 
         # Connect to itemChanged to detect checkbox changes.
         self.labelList.itemChanged.connect(self.labelItemChanged)
