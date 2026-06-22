@@ -2113,6 +2113,11 @@ class MainWindow(QMainWindow):
                 selected_shapes.append(self.itemsToShapes[item])
             if selected_shapes:
                 self.canvas.selectShapes(selected_shapes)
+                score = selected_shapes[0].score
+                if score is not None:
+                    self.confidenceLabel.setText(
+                        f"Threshold: {self.confidenceSlider.value() / 100:.2f}   |   Selected: {score:.2f}"
+                    )
             else:
                 self.canvas.deSelectShape()
 
