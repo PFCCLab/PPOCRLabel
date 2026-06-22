@@ -22,6 +22,7 @@ import platform
 import signal
 import subprocess
 import sys
+import torch  # noqa: F401 — keeps torch DLLs loaded for PaddlePaddle on Windows
 from functools import partial
 from PyQt5.QtWidgets import QShortcut
 from PyQt5.QtGui import QKeySequence
