@@ -149,6 +149,13 @@ DEFAULT_RECOGNITION_MODELS = {
     "japan": "PP-OCRv5_server_rec",
 }
 
+
+def getRecognitionModelName(lang, modelName, modelDir):
+    if modelDir is None and modelName == "PP-OCRv5_mobile_rec":
+        return DEFAULT_RECOGNITION_MODELS[lang]
+    return modelName
+
+
 LABEL_COLORMAP = label_colormap()
 
 
@@ -210,15 +217,9 @@ class MainWindow(QMainWindow):
         self.rec_model_name = rec_model_name
         self.cls_model_dir = cls_model_dir
         self.model_lang = self.lang if self.lang in DEFAULT_RECOGNITION_MODELS else "ch"
-        self.use_default_ocr_models = (
-            self.det_model_dir is None
-            and self.rec_model_dir is None
-            and self.det_model_name == "PP-OCRv5_mobile_det"
-            and self.rec_model_name == "PP-OCRv5_mobile_rec"
+        recognition_model_name = getRecognitionModelName(
+            self.model_lang, self.rec_model_name, self.rec_model_dir
         )
-        recognition_model_name = self.rec_model_name
-        if self.use_default_ocr_models:
-            recognition_model_name = DEFAULT_RECOGNITION_MODELS[self.model_lang]
 
         params = {
             "use_doc_orientation_classify": False,
@@ -3640,9 +3641,9 @@ class MainWindow(QMainWindow):
         if current_text in lg_idx:
             choose_lang = lg_idx[current_text]
             if hasattr(self, "ocr"):
-                rec_model_name = self.rec_model_name
-                if self.use_default_ocr_models:
-                    rec_model_name = DEFAULT_RECOGNITION_MODELS[choose_lang]
+                rec_model_name = getRecognitionModelName(
+                    choose_lang, self.rec_model_name, self.rec_model_dir
+                )
 
                 params = {
                     "use_doc_orientation_classify": False,
@@ -3651,6 +3652,7 @@ class MainWindow(QMainWindow):
                     "text_detection_model_name": self.det_model_name,
                     "text_recognition_model_name": rec_model_name,
                     "device": self.gpu,
+                    "enable_mkldnn": False,
                 }
                 if self.det_model_dir is not None:
                     params["text_detection_model_dir"] = self.det_model_dir
