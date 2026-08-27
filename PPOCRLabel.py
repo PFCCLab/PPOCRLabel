@@ -157,7 +157,9 @@ def moveFileToTrash(filePath):
 
         operation = SHFILEOPSTRUCTW()
         operation.wFunc = 3  # FO_DELETE
-        operation.pFrom = os.path.abspath(filePath) + "\0"
+        fromPath = os.path.abspath(filePath) + "\0\0"
+        fromBuffer = ctypes.create_unicode_buffer(fromPath)
+        operation.pFrom = ctypes.cast(fromBuffer, wintypes.LPCWSTR)
         operation.fFlags = 0x0040 | 0x0010 | 0x0004 | 0x0400
         result = ctypes.windll.shell32.SHFileOperationW(ctypes.byref(operation))
         return result == 0 and not operation.fAnyOperationsAborted
