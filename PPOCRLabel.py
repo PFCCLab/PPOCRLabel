@@ -138,6 +138,47 @@ import logging
 logger = logging.getLogger("PPOCRLabel")
 
 
+def moveFileToTrash(filePath):
+    if platform.system() == "Windows":
+        import ctypes
+        from ctypes import wintypes
+
+        class SHFILEOPSTRUCTW(ctypes.Structure):
+            _fields_ = [
+                ("hwnd", wintypes.HWND),
+                ("wFunc", wintypes.UINT),
+                ("pFrom", wintypes.LPCWSTR),
+                ("pTo", wintypes.LPCWSTR),
+                ("fFlags", ctypes.c_ushort),
+                ("fAnyOperationsAborted", wintypes.BOOL),
+                ("hNameMappings", ctypes.c_void_p),
+                ("lpszProgressTitle", wintypes.LPCWSTR),
+            ]
+
+        operation = SHFILEOPSTRUCTW()
+        operation.wFunc = 3  # FO_DELETE
+        operation.pFrom = os.path.abspath(filePath) + "\0"
+        operation.fFlags = 0x0040 | 0x0010 | 0x0004 | 0x0400
+        result = ctypes.windll.shell32.SHFileOperationW(ctypes.byref(operation))
+        return result == 0 and not operation.fAnyOperationsAborted
+
+    if platform.system() == "Linux":
+        return subprocess.call(["trash", filePath]) == 0
+
+    if platform.system() == "Darwin":
+        absPath = os.path.abspath(filePath).replace("\\", "\\\\").replace('"', '\\"')
+        cmd = [
+            "osascript",
+            "-e",
+            'tell app "Finder" to move {the POSIX file "' + absPath + '"} to trash',
+        ]
+        logger.debug("Executing command: %s", " ".join(cmd))
+        with open(os.devnull, "w") as devnull:
+            return subprocess.call(cmd, stdout=devnull) == 0
+
+    return False
+
+
 __appname__ = "PPOCRLabel"
 
 LABEL_COLORMAP = label_colormap()
@@ -2831,41 +2872,27 @@ class MainWindow(QMainWindow):
         if deletePath is not None:
             deleteInfo = self.deleteImgDialog()
             if deleteInfo == QMessageBox.Yes:
-                if platform.system() == "Windows":
-                    # from win32com import shell, shellcon
-                    # shell.SHFileOperation((0, shellcon.FO_DELETE, deletePath, None,
-                    #                        shellcon.FOF_SILENT | shellcon.FOF_ALLOWUNDO | shellcon.FOF_NOCONFIRMATION,
-                    #                        None, None))
-                    os.remove(deletePath)
-                    # linux
-                elif platform.system() == "Linux":
-                    cmd = "trash " + deletePath
-                    os.system(cmd)
-                    # macOS
-                elif platform.system() == "Darwin":
-                    import subprocess
+                imgidx = self.getImglabelidx(deletePath)
+                try:
+                    deleteSucceeded = moveFileToTrash(deletePath)
+                except Exception as error:
+                    logger.exception("Failed to move image to trash: %s", error)
+                    deleteSucceeded = False
 
-                    absPath = (
-                        os.path.abspath(deletePath)
-                        .replace("\\", "\\\\")
-                        .replace('"', '\\"')
+                if not deleteSucceeded:
+                    QMessageBox.warning(
+                        self,
+                        "Attention",
+                        "The image could not be moved to the recycle bin.",
                     )
-                    cmd = [
-                        "osascript",
-                        "-e",
-                        'tell app "Finder" to move {the POSIX file "'
-                        + absPath
-                        + '"} to trash',
-                    ]
-                    logger.debug("Executing command: %s", " ".join(cmd))
-                    subprocess.call(cmd, stdout=open(os.devnull, "w"))
+                    return
 
-                if self.filePath in self.fileStatedict.keys():
-                    self.fileStatedict.pop(self.filePath)
-                imgidx = self.getImglabelidx(self.filePath)
-                if imgidx in self.PPlabel.keys():
-                    self.PPlabel.pop(imgidx)
-
+                self.fileStatedict.pop(imgidx, None)
+                self.PPlabel.pop(imgidx, None)
+                self.Cachelabel.pop(imgidx, None)
+                self.saveFilestate()
+                self.savePPlabel(mode="Auto")
+                self.saveCacheLabel()
                 self.importDirImages(self.lastOpenDir, isDelete=True)
 
     def deleteImgDialog(self):
