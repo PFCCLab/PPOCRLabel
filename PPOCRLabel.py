@@ -140,6 +140,22 @@ logger = logging.getLogger("PPOCRLabel")
 
 __appname__ = "PPOCRLabel"
 
+DEFAULT_RECOGNITION_MODELS = {
+    "ch": "PP-OCRv5_mobile_rec",
+    "en": "en_PP-OCRv5_mobile_rec",
+    "french": "latin_PP-OCRv5_mobile_rec",
+    "german": "latin_PP-OCRv5_mobile_rec",
+    "korean": "korean_PP-OCRv5_mobile_rec",
+    "japan": "PP-OCRv5_server_rec",
+}
+
+
+def getRecognitionModelName(lang, modelName, modelDir):
+    if modelDir is None and modelName == "PP-OCRv5_mobile_rec":
+        return DEFAULT_RECOGNITION_MODELS[lang]
+    return modelName
+
+
 LABEL_COLORMAP = label_colormap()
 
 
@@ -200,15 +216,18 @@ class MainWindow(QMainWindow):
         self.rec_model_dir = rec_model_dir
         self.rec_model_name = rec_model_name
         self.cls_model_dir = cls_model_dir
+        self.model_lang = self.lang if self.lang in DEFAULT_RECOGNITION_MODELS else "ch"
+        recognition_model_name = getRecognitionModelName(
+            self.model_lang, self.rec_model_name, self.rec_model_dir
+        )
 
         params = {
             "use_doc_orientation_classify": False,
             "use_doc_unwarping": False,
             "use_textline_orientation": False,
             "device": self.gpu,
-            "lang": self.lang,
             "text_detection_model_name": self.det_model_name,
-            "text_recognition_model_name": self.rec_model_name,
+            "text_recognition_model_name": recognition_model_name,
             "enable_mkldnn": False,
         }
 
@@ -221,7 +240,7 @@ class MainWindow(QMainWindow):
 
         self.ocr = PaddleOCR(**params)
         self.text_recognizer = TextRecognition(
-            model_name=self.rec_model_name,
+            model_name=recognition_model_name,
             model_dir=self.rec_model_dir,
             device=self.gpu,
         )
@@ -3574,6 +3593,17 @@ class MainWindow(QMainWindow):
         self.comboBox.addItems(
             ["Chinese & English", "English", "French", "German", "Korean", "Japanese"]
         )
+        model_labels = {
+            "ch": "Chinese & English",
+            "en": "English",
+            "french": "French",
+            "german": "German",
+            "korean": "Korean",
+            "japan": "Japanese",
+        }
+        self.comboBox.setCurrentText(
+            model_labels.get(self.model_lang, "Chinese & English")
+        )
         vbox.addWidget(self.panel)
         vbox.addWidget(self.comboBox)
         self.dialog = QDialog()
@@ -3611,15 +3641,18 @@ class MainWindow(QMainWindow):
         if current_text in lg_idx:
             choose_lang = lg_idx[current_text]
             if hasattr(self, "ocr"):
-                del self.ocr
+                rec_model_name = getRecognitionModelName(
+                    choose_lang, self.rec_model_name, self.rec_model_dir
+                )
+
                 params = {
                     "use_doc_orientation_classify": False,
                     "use_textline_orientation": False,
                     "use_doc_unwarping": False,
                     "text_detection_model_name": self.det_model_name,
-                    "text_recognition_model_name": self.rec_model_name,
-                    "lang": choose_lang,
+                    "text_recognition_model_name": rec_model_name,
                     "device": self.gpu,
+                    "enable_mkldnn": False,
                 }
                 if self.det_model_dir is not None:
                     params["text_detection_model_dir"] = self.det_model_dir
@@ -3628,7 +3661,14 @@ class MainWindow(QMainWindow):
                 if self.cls_model_dir is not None:
                     params["text_line_orientation_model_dir"] = self.cls_model_dir
 
-                self.ocr = PaddleOCR(**params)
+                selected_ocr = PaddleOCR(**params)
+                selected_text_recognizer = TextRecognition(
+                    model_name=rec_model_name,
+                    model_dir=self.rec_model_dir,
+                    device=self.gpu,
+                )
+                self.ocr = selected_ocr
+                self.text_recognizer = selected_text_recognizer
             if choose_lang in ["ch", "en"]:
                 if hasattr(self, "table_ocr"):
                     del self.table_ocr
@@ -3642,6 +3682,7 @@ class MainWindow(QMainWindow):
                     use_region_detection=False,
                     device=self.gpu,
                 )
+            self.model_lang = choose_lang
         else:
             logger.error("Invalid language selection")
         self.dialog.close()
