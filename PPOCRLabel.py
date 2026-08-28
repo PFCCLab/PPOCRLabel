@@ -22,7 +22,10 @@ import platform
 import signal
 import subprocess
 import sys
+import torch  # noqa: F401 — keeps torch DLLs loaded for PaddlePaddle on Windows
 from functools import partial
+from PyQt5.QtWidgets import QShortcut
+from PyQt5.QtGui import QKeySequence
 
 import openpyxl
 import cv2
@@ -460,6 +463,7 @@ class MainWindow(QMainWindow):
         labelListContainer.setLayout(listLayout)
         self.labelList.itemSelectionChanged.connect(self.labelSelectionChanged)
         self.labelList.clicked.connect(self.labelList.item_clicked)
+        self.labelList.navigated.connect(self.focusAndZoom)
 
         # Connect to itemChanged to detect checkbox changes.
         self.labelList.itemChanged.connect(self.labelItemChanged)
@@ -543,6 +547,35 @@ class MainWindow(QMainWindow):
         self.imageSliderDock.setFeatures(QDockWidget.DockWidgetFloatable)
         self.imageSliderDock.setAttribute(Qt.WA_TranslucentBackground)
         self.addDockWidget(Qt.RightDockWidgetArea, self.imageSliderDock)
+
+        #  ================== Confidence Filter ==================
+        self.confidenceSlider = QSlider(Qt.Horizontal)
+        self.confidenceSlider.setMinimum(0)
+        self.confidenceSlider.setMaximum(100)
+        self.confidenceSlider.setValue(100)
+        self.confidenceSlider.setSingleStep(1)
+        self.confidenceSlider.setToolTip(
+            "Show only boxes with confidence BELOW this threshold"
+        )
+        self.confidenceSlider.valueChanged.connect(self.onConfidenceFilterChanged)
+
+        self.confidenceLabel = QLabel("Threshold: 1.00  (show all)")
+        self.confidenceLabel.setAlignment(Qt.AlignCenter)
+
+        confWidget = QWidget()
+        confLayout = QVBoxLayout()
+        confLayout.setContentsMargins(4, 4, 4, 4)
+        confLayout.addWidget(self.confidenceLabel)
+        confLayout.addWidget(self.confidenceSlider)
+        confWidget.setLayout(confLayout)
+
+        self.confidenceFilterDock = QDockWidget("Confidence Filter", self)
+        self.confidenceFilterDock.setObjectName("ConfidenceFilter")
+        self.confidenceFilterDock.setWidget(confWidget)
+        self.confidenceFilterDock.setFeatures(
+            QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetClosable
+        )
+        self.addDockWidget(Qt.RightDockWidgetArea, self.confidenceFilterDock)
 
         self.zoomWidget = ZoomWidget()
         self.colorDialog = ColorDialog(parent=self)
@@ -1241,6 +1274,14 @@ class MainWindow(QMainWindow):
         self.displayIndexOption.setChecked(settings.get(SETTING_PAINT_INDEX, False))
         self.autoSaveUnsavedChangesOption.triggered.connect(self.autoSaveFunc)
 
+        QShortcut(
+            QKeySequence(Qt.Key_F2),
+            self,
+            activated=lambda: (
+                self.labelList.activate_edit() if self.currentItem() else None
+            ),
+        )
+
         addActions(
             self.menus.file,
             (
@@ -1393,6 +1434,40 @@ class MainWindow(QMainWindow):
         if event.key() == Qt.Key_Control:
             # Draw rectangle if Ctrl is pressed
             self.canvas.setDrawingShapeToSquare(True)
+        elif event.key() in (Qt.Key_F2, Qt.Key_Return, Qt.Key_Enter):
+            if self.currentItem() is not None:
+                self.labelList.activate_edit()
+                event.accept()
+
+    def _navigateLabel(self, direction):
+        count = self.labelList.count()
+        if count == 0:
+            return
+        current = self.labelList.currentRow()
+        if current < 0:
+            next_row = 0 if direction > 0 else count - 1
+        else:
+            next_row = (current + direction) % count
+        self.labelList.setCurrentRow(next_row)
+        self.labelList.scrollToItem(self.labelList.item(next_row))
+        self.focusAndZoom()
+
+    def onConfidenceFilterChanged(self, value):
+        threshold = value / 100.0
+        if value == 100:
+            self.confidenceLabel.setText("Threshold: 1.00  (show all)")
+        else:
+            self.confidenceLabel.setText(f"Threshold: {threshold:.2f}")
+        self.applyConfidenceFilter()
+
+    def applyConfidenceFilter(self):
+        threshold = self.confidenceSlider.value() / 100.0
+        for shape in self.canvas.shapes:
+            if shape.score is None:
+                self.canvas.setShapeVisible(shape, True)
+            else:
+                self.canvas.setShapeVisible(shape, shape.score < threshold)
+        self.canvas.update()
 
     def noShapes(self):
         return not self.itemsToShapes
@@ -1958,7 +2033,9 @@ class MainWindow(QMainWindow):
     def loadLabels(self, shapes):
         s = []
         shape_index = 0
-        for label, points, line_color, key_cls in shapes:
+        for item in shapes:
+            label, points, line_color, key_cls = item[:4]
+            score = item[4] if len(item) > 4 else None
             shape = Shape(
                 label=label,
                 line_color=line_color,
@@ -1974,7 +2051,7 @@ class MainWindow(QMainWindow):
                 shape.addPoint(QPointF(x, y))
             shape.idx = shape_index
             shape_index += 1
-            # shape.locked = False
+            shape.score = score
             shape.close()
             s.append(shape)
 
@@ -2023,13 +2100,16 @@ class MainWindow(QMainWindow):
 
         def format_shape(s):
             # print('s in saveLabels is ',s)
-            return dict(
+            d = dict(
                 label=s.label,  # str
                 line_color=s.line_color.getRgb(),
                 fill_color=s.fill_color.getRgb(),
                 points=[(int(p.x()), int(p.y())) for p in s.points],  # QPonitF
                 key_cls=s.key_cls,
-            )  # bool
+            )
+            if s.score is not None:
+                d["score"] = round(float(s.score), 4)
+            return d
 
         if mode == "Auto":
             shapes = []
@@ -2041,7 +2121,7 @@ class MainWindow(QMainWindow):
             ]
         # Can add different annotation formats here
         for box in self.result_dic:
-            trans_dic = {"label": box[1][0], "points": box[0]}
+            trans_dic = {"label": box[1][0], "points": box[0], "score": box[1][1]}
             if self.kie_mode:
                 if len(box) == 3:
                     trans_dic.update({"key_cls": box[2]})
@@ -2059,6 +2139,8 @@ class MainWindow(QMainWindow):
                     "points": box["points"],
                     "difficult": False,
                 }
+                if box.get("score") is not None:
+                    trans_dict["score"] = round(float(box["score"]), 4)
                 if self.kie_mode:
                     trans_dict.update({"key_cls": box["key_cls"]})
                 trans_dic.append(trans_dict)
@@ -2094,6 +2176,11 @@ class MainWindow(QMainWindow):
                 selected_shapes.append(self.itemsToShapes[item])
             if selected_shapes:
                 self.canvas.selectShapes(selected_shapes)
+                score = selected_shapes[0].score
+                if score is not None:
+                    self.confidenceLabel.setText(
+                        f"Threshold: {self.confidenceSlider.value() / 100:.2f}   |   Selected: {score:.2f}"
+                    )
             else:
                 self.canvas.deSelectShape()
 
@@ -2482,6 +2569,7 @@ class MainWindow(QMainWindow):
                         [[s[0] * width, s[1] * height] for s in box["ratio"]],
                         DEFAULT_LOCK_COLOR,
                         key_cls,
+                        None,
                     )
                 )
             else:
@@ -2491,6 +2579,7 @@ class MainWindow(QMainWindow):
                         [[s[0] * width, s[1] * height] for s in box["ratio"]],
                         DEFAULT_LOCK_COLOR,
                         key_cls,
+                        None,
                     )
                 )
         if img_idx in self.PPlabel.keys():
@@ -2502,12 +2591,14 @@ class MainWindow(QMainWindow):
                         box["points"],
                         None,
                         key_cls,
+                        box.get("score"),
                     )
                 )
 
         if shapes:
             self.loadLabels(shapes)
             self.canvas.verified = False
+            self.applyConfidenceFilter()
 
     def validFilestate(self, filePath):
         if filePath in self.fileStatedict.keys() and self.fileStatedict[filePath] == 1:
@@ -2650,7 +2741,9 @@ class MainWindow(QMainWindow):
 
         else:
             if self.lang == "ch":
-                self.msgBox.warning(self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!")
+                self.msgBox.warning(
+                    self, "提示", "\n 原文件夹已不存在,请从新选择数据集路径!"
+                )
             else:
                 self.msgBox.warning(
                     self,
@@ -3296,6 +3389,9 @@ class MainWindow(QMainWindow):
         self.loadFile(self.filePath, isAdjustScale=False)
         self.canvas.isInTheSameImage = False
         self.setDirty()
+        for shape, box in zip(self.canvas.shapes, self.result_dic):
+            shape.score = box[1][1]
+        self.applyConfidenceFilter()
 
     def singleRerecognition(self):
         img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
