@@ -1223,6 +1223,10 @@ class MainWindow(QMainWindow):
         self.displayIndexOption.setChecked(settings.get(SETTING_PAINT_INDEX, False))
         self.autoSaveOption.triggered.connect(self.autoSaveFunc)
 
+        self.autoConfirmOption = QAction(get_str("autoConfirm"), self)
+        self.autoConfirmOption.setCheckable(True)
+        self.autoConfirmOption.setChecked(False)
+
         self.autoReRecognitionOption = QAction(get_str("autoReRecognition"), self)
         self.autoReRecognitionOption.setCheckable(True)
         self.autoReRecognitionOption.setChecked(
@@ -1253,6 +1257,7 @@ class MainWindow(QMainWindow):
                 self.autoSaveOption,
                 self.autoReRecognitionOption,
                 self.autoSaveUnsavedChangesOption,
+                self.autoConfirmOption,
                 None,
                 settings_action,
                 resetAll,
@@ -3166,6 +3171,26 @@ class MainWindow(QMainWindow):
             len_bar=len(uncheckedList),
         )
         self.autoDialog.popUp()
+
+        # Auto-confirm batch OCR results when the option is checked
+        if self.autoConfirmOption.isChecked() and uncheckedList:
+            for image_path in uncheckedList:
+                img_idx = self.getImglabelidx(image_path)
+                if img_idx in self.PPlabel and self.PPlabel[img_idx]:
+                    self.fileStatedict[img_idx] = 1
+                    try:
+                        currIndex = self.mImgList.index(image_path)
+                        item = self.fileListWidget.item(currIndex)
+                        if item is not None:
+                            item.setIcon(newIcon("done"))
+                    except ValueError:
+                        pass
+            self.saveFilestate()
+            self.savePPlabel(mode="Auto")
+            self.actions.saveRec.setEnabled(True)
+            self.actions.saveLabel.setEnabled(True)
+            self.actions.exportJSON.setEnabled(True)
+
         self.haveAutoReced = True
         self.filePath = self.mImgList[self.currIndex]
         self.loadFile(self.filePath, isAdjustScale=False)
