@@ -126,6 +126,14 @@ from libs.stringBundle import StringBundle
 from libs.canvas import Canvas
 from libs.zoomWidget import ZoomWidget
 from libs.autoDialog import AutoDialog
+from libs.autoLabelSettings import (
+    default_config,
+    load_config,
+    resolve_models,
+    save_config,
+    validate_config,
+)
+from libs.autoLabelSettingsDialog import AutoLabelSettingsDialog
 from libs.labelDialog import LabelDialog
 from libs.colorDialog import ColorDialog
 from libs.hashableQListWidgetItem import HashableQListWidgetItem
@@ -222,6 +230,7 @@ class MainWindow(QMainWindow):
         cls_model_dir=None,
         label_font_path=None,
         selected_shape_color=(255, 255, 0),
+        model_cli_overrides=None,
     ):
         super(MainWindow, self).__init__()
         self.setWindowTitle(__appname__)
@@ -260,38 +269,21 @@ class MainWindow(QMainWindow):
         self.rec_model_name = rec_model_name
         self.cls_model_dir = cls_model_dir
         self.model_lang = self.lang if self.lang in DEFAULT_RECOGNITION_MODELS else "ch"
-        recognition_model_name = getRecognitionModelName(
-            self.model_lang, self.rec_model_name, self.rec_model_dir
-        )
-
-        params = {
-            "use_doc_orientation_classify": False,
-            "use_doc_unwarping": False,
-            "use_textline_orientation": False,
-            "device": self.gpu,
-            "text_detection_model_name": self.det_model_name,
-            "text_recognition_model_name": recognition_model_name,
-            "enable_mkldnn": False,
-        }
-
-        if self.det_model_dir is not None:
-            params["text_detection_model_dir"] = self.det_model_dir
-        if self.rec_model_dir is not None:
-            params["text_recognition_model_dir"] = self.rec_model_dir
-        if self.cls_model_dir is not None:
-            params["text_line_orientation_model_dir"] = self.cls_model_dir
-
-        self.ocr = PaddleOCR(**params)
-        self.text_recognizer = TextRecognition(
-            model_name=recognition_model_name,
-            model_dir=self.rec_model_dir,
-            device=self.gpu,
-        )
-        self.text_detector = TextDetection(
-            model_name=self.det_model_name,
-            model_dir=self.det_model_dir,
-            device=self.gpu,
-        )
+        self.model_cli_overrides = model_cli_overrides
+        if self.model_cli_overrides is None:
+            self.model_cli_overrides = {}
+            for key, value, default in (
+                ("det_model_dir", det_model_dir, None),
+                ("rec_model_dir", rec_model_dir, None),
+                ("det_model_name", det_model_name, "PP-OCRv5_mobile_det"),
+                ("rec_model_name", rec_model_name, "PP-OCRv5_mobile_rec"),
+            ):
+                if value != default:
+                    self.model_cli_overrides[key] = value
+        self.model_config = default_config(self.model_lang)
+        self._loaded_model_options = None
+        self._model_config_error = None
+        self.setAutoLabelConfig(self.model_config)
         self.table_ocr = PPStructureV3(
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
@@ -651,11 +643,11 @@ class MainWindow(QMainWindow):
         )
 
         alcm = action(
-            get_str("choosemodel"),
+            get_str("autoLabelSettings"),
             self.autolcm,
             "Ctrl+M",
             "next",
-            get_str("tipchoosemodel"),
+            get_str("autoLabelSettings"),
         )
 
         deleteImg = action(
@@ -1190,7 +1182,7 @@ class MainWindow(QMainWindow):
             file=self.menu("&" + get_str("mfile")),
             edit=self.menu("&" + get_str("medit")),
             view=self.menu("&" + get_str("mview")),
-            autolabel=self.menu("&PaddleOCR"),
+            autolabel=self.menu("&" + get_str("autoLabelMenu")),
             help=self.menu("&" + get_str("mhelp")),
             recentFiles=QMenu("Open &Recent"),
             labelList=labelMenu,
@@ -2714,6 +2706,8 @@ class MainWindow(QMainWindow):
         self.dirname = dirpath
 
         self.defaultSaveDir = dirpath
+        if not isDelete:
+            self.loadDatasetModelConfig(dirpath)
         self.statusBar().showMessage(
             "%s started. Annotation will be saved to %s"
             % (__appname__, self.defaultSaveDir)
@@ -3141,6 +3135,8 @@ class MainWindow(QMainWindow):
 
     def autoRecognition(self):
         assert self.mImgList is not None
+        if not self.ensurePaddleModel():
+            return
         logger.info("Using model from %s", self.model)
 
         start_index = self.currIndex
@@ -3174,6 +3170,8 @@ class MainWindow(QMainWindow):
         self.init_key_list(self.Cachelabel)
 
     def reRecognition(self):
+        if not self.ensurePaddleModel():
+            return
         img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
         if self.canvas.shapes:
             self.result_dic = []
@@ -3258,6 +3256,8 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Information", "Draw a box!")
 
     def autoRecognitionCurrent(self):
+        if not self.ensurePaddleModel():
+            return
         if self.canvas.shapes:
             msg = (
                 "This will delete all existing boxes and re-detect the image. Do you want to continue?"
@@ -3298,6 +3298,8 @@ class MainWindow(QMainWindow):
         self.setDirty()
 
     def singleRerecognition(self):
+        if not self.ensurePaddleModel():
+            return
         img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
         for shape in self.canvas.selectedShapes:
             box = [[int(p.x()), int(p.y())] for p in shape.points]
@@ -3479,6 +3481,8 @@ class MainWindow(QMainWindow):
         logger.info("Table recognition time cost: %s", time.time() - start)
 
     def cellreRecognition(self):
+        if not self.ensurePaddleModel():
+            return
         """
         re-recognise text in a cell
         """
@@ -3611,113 +3615,106 @@ class MainWindow(QMainWindow):
         msg = "JSON successfully saved in {}/gt.txt".format(self.lastOpenDir)
         QMessageBox.information(self, "Information", msg)
 
-    def autolcm(self):
-        vbox = QVBoxLayout()
-        hbox = QHBoxLayout()
-        self.panel = QLabel()
-        self.panel.setText(self.stringBundle.getString("choseModelLg"))
-        self.panel.setAlignment(Qt.AlignLeft)
-        self.comboBox = QComboBox()
-        self.comboBox.setObjectName("comboBox")
-        self.comboBox.addItems(
-            ["Chinese & English", "English", "French", "German", "Korean", "Japanese"]
+    def setAutoLabelConfig(self, config, save=False):
+        config = validate_config(config, self.lang)
+        options = resolve_models(config, self.model_cli_overrides)
+        options["rec_model_name"] = getRecognitionModelName(
+            config["language"], options["rec_model_name"], options["rec_model_dir"]
         )
-        model_labels = {
-            "ch": "Chinese & English",
-            "en": "English",
-            "french": "French",
-            "german": "German",
-            "korean": "Korean",
-            "japan": "Japanese",
-        }
-        self.comboBox.setCurrentText(
-            model_labels.get(self.model_lang, "Chinese & English")
-        )
-        vbox.addWidget(self.panel)
-        vbox.addWidget(self.comboBox)
-        self.dialog = QDialog()
-        self.dialog.resize(300, 100)
-        self.okBtn = QPushButton(self.stringBundle.getString("ok"))
-        self.cancelBtn = QPushButton(self.stringBundle.getString("cancel"))
-
-        self.okBtn.clicked.connect(self.modelChoose)
-        self.cancelBtn.clicked.connect(self.cancel)
-        self.dialog.setWindowTitle(self.stringBundle.getString("choseModelLg"))
-
-        hbox.addWidget(self.okBtn)
-        hbox.addWidget(self.cancelBtn)
-
-        vbox.addWidget(self.panel)
-        vbox.addLayout(hbox)
-        self.dialog.setLayout(vbox)
-        self.dialog.setWindowModality(Qt.ApplicationModal)
-        self.dialog.exec_()
-        if self.filePath:
-            self.AutoRecognition.setEnabled(True)
-            self.actions.AutoRec.setEnabled(True)
-
-    def modelChoose(self):
-        current_text = self.comboBox.currentText()
-        logger.debug("Model selected: %s", current_text)
-        lg_idx = {
-            "Chinese & English": "ch",
-            "English": "en",
-            "French": "french",
-            "German": "german",
-            "Korean": "korean",
-            "Japanese": "japan",
-        }
-        if current_text in lg_idx:
-            choose_lang = lg_idx[current_text]
-            if hasattr(self, "ocr"):
-                rec_model_name = getRecognitionModelName(
-                    choose_lang, self.rec_model_name, self.rec_model_dir
-                )
-
+        models = None
+        if options != self._loaded_model_options:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            try:
                 params = {
                     "use_doc_orientation_classify": False,
-                    "use_textline_orientation": False,
                     "use_doc_unwarping": False,
-                    "text_detection_model_name": self.det_model_name,
-                    "text_recognition_model_name": rec_model_name,
+                    "use_textline_orientation": False,
                     "device": self.gpu,
+                    "text_detection_model_name": options["det_model_name"],
+                    "text_recognition_model_name": options["rec_model_name"],
                     "enable_mkldnn": False,
+                    "cpu_threads": 4,
                 }
-                if self.det_model_dir is not None:
-                    params["text_detection_model_dir"] = self.det_model_dir
-                if self.rec_model_dir is not None:
-                    params["text_recognition_model_dir"] = self.rec_model_dir
-                if self.cls_model_dir is not None:
+                for task, role in (("det", "detection"), ("rec", "recognition")):
+                    if options[task + "_model_dir"]:
+                        params["text_" + role + "_model_dir"] = options[
+                            task + "_model_dir"
+                        ]
+                if self.cls_model_dir:
                     params["text_line_orientation_model_dir"] = self.cls_model_dir
-
                 selected_ocr = PaddleOCR(**params)
-                selected_text_recognizer = TextRecognition(
-                    model_name=rec_model_name,
-                    model_dir=self.rec_model_dir,
+                selected_rec = TextRecognition(
+                    model_name=options["rec_model_name"],
+                    model_dir=options["rec_model_dir"],
                     device=self.gpu,
+                    enable_mkldnn=False,
+                    cpu_threads=4,
                 )
-                self.ocr = selected_ocr
-                self.text_recognizer = selected_text_recognizer
-            if choose_lang in ["ch", "en"]:
-                if hasattr(self, "table_ocr"):
-                    del self.table_ocr
-                self.table_ocr = PPStructureV3(
-                    use_doc_orientation_classify=False,
-                    use_doc_unwarping=False,
-                    use_seal_recognition=False,
-                    use_table_recognition=True,
-                    use_formula_recognition=False,
-                    use_chart_recognition=False,
-                    use_region_detection=False,
+                selected_det = TextDetection(
+                    model_name=options["det_model_name"],
+                    model_dir=options["det_model_dir"],
                     device=self.gpu,
+                    enable_mkldnn=False,
+                    cpu_threads=4,
                 )
-            self.model_lang = choose_lang
-        else:
-            logger.error("Invalid language selection")
-        self.dialog.close()
+                models = selected_ocr, selected_rec, selected_det
+            finally:
+                QApplication.restoreOverrideCursor()
+        if save:
+            save_config(self.dirname, config)
+        # Publish the complete model set only after loading and saving succeed.
+        if models is not None:
+            self.ocr, self.text_recognizer, self.text_detector = models
+        self._loaded_model_options = options
+        for key, value in options.items():
+            setattr(self, key, value)
+        self.model_config = config
+        self.model_lang = config["language"]
+        self._model_config_error = None
 
-    def cancel(self):
-        self.dialog.close()
+    def loadDatasetModelConfig(self, directory):
+        config = default_config(self.lang)
+        try:
+            config = load_config(directory, self.lang)
+            self.setAutoLabelConfig(config)
+        except Exception as error:
+            self.model_config = config
+            self._model_config_error = str(error)
+            self.errorMessage(
+                self.stringBundle.getString("autoLabelSettings"), str(error)
+            )
+
+    def ensurePaddleModel(self):
+        if self._model_config_error:
+            self.errorMessage(
+                self.stringBundle.getString("autoLabelSettings"),
+                self._model_config_error,
+            )
+            return False
+        return True
+
+    def autolcm(self):
+        if not self.dirname:
+            QMessageBox.information(
+                self,
+                self.stringBundle.getString("autoLabelSettings"),
+                "请先打开图片目录。" if self.lang == "ch" else "Open an image directory first.",
+            )
+            return
+        dialog = AutoLabelSettingsDialog(
+            self.model_config,
+            self,
+            language=self.lang,
+            cli_overrides=bool(self.model_cli_overrides),
+        )
+        while dialog.exec_() == QDialog.Accepted:
+            try:
+                self.setAutoLabelConfig(dialog.config(), save=True)
+                return
+            except Exception as error:
+                self.errorMessage(
+                    self.stringBundle.getString("autoLabelSettings"), str(error)
+                )
 
     def loadFilestate(self, saveDir):
         self.fileStatepath = saveDir + "/fileState.txt"
@@ -4138,13 +4135,9 @@ def get_main_app(argv=[]):
         nargs="?",
     )
     arg_parser.add_argument("--det_model_dir", type=str, default=None, nargs="?")
-    arg_parser.add_argument(
-        "--det_model_name", type=str, default="PP-OCRv5_mobile_det", nargs="?"
-    )
+    arg_parser.add_argument("--det_model_name", type=str, default=None, nargs="?")
     arg_parser.add_argument("--rec_model_dir", type=str, default=None, nargs="?")
-    arg_parser.add_argument(
-        "--rec_model_name", type=str, default="PP-OCRv5_mobile_rec", nargs="?"
-    )
+    arg_parser.add_argument("--rec_model_name", type=str, default=None, nargs="?")
     arg_parser.add_argument("--rec_char_dict_path", type=str, default=None, nargs="?")
     arg_parser.add_argument("--cls_model_dir", type=str, default=None, nargs="?")
     arg_parser.add_argument(
@@ -4168,13 +4161,23 @@ def get_main_app(argv=[]):
         kie_mode=args.kie,
         default_predefined_class_file=args.predefined_classes_file,
         det_model_dir=args.det_model_dir,
-        det_model_name=args.det_model_name,
+        det_model_name=args.det_model_name or "PP-OCRv5_mobile_det",
         rec_model_dir=args.rec_model_dir,
-        rec_model_name=args.rec_model_name,
+        rec_model_name=args.rec_model_name or "PP-OCRv5_mobile_rec",
         cls_model_dir=args.cls_model_dir,
         bbox_auto_zoom_center=args.bbox_auto_zoom_center,
         label_font_path=args.label_font_path,
         selected_shape_color=args.selected_shape_color,
+        model_cli_overrides={
+            key: getattr(args, key)
+            for key in (
+                "det_model_name",
+                "det_model_dir",
+                "rec_model_name",
+                "rec_model_dir",
+            )
+            if getattr(args, key) is not None
+        },
     )
     win.show()
     return app, win

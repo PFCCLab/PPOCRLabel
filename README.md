@@ -260,12 +260,25 @@ labeling in the Excel file, the recommended steps are:
 
 ### 3.2 Built-in Model
 
+Use **Automatic labeling → Automatic labeling settings** (Ctrl+M) after opening
+an image directory to select official v5/v6 models or local Paddle inference
+directories. Local model names come from inference.yml. v6 needs a compatible
+PaddleOCR/PaddleX and PaddlePaddle runtime.
+
+The selection is saved in that directory's ppocrlabel.json. New directories
+start with v5 mobile; explicit command-line model arguments override directory
+settings for that session. A failed switch retains the previous model set.
+
+Batch automatic labeling skips **√ confirmed** images. Keep fileState.txt
+together with Label.txt when moving datasets; automatic results still require
+human checking and confirmation.
+
 - Default model: PPOCRLabel uses the Chinese and English ultra-lightweight OCR model in PaddleOCR by default, supports Chinese, English and number recognition, and multiple language detection.
 
-- Model language switching: Changing the built-in model language is supportable by clicking "PaddleOCR"-"Choose OCR Model" in the menu bar. Currently supported languages​include French, German, Korean, and Japanese.
+- Model language switching: Use **Automatic labeling → Automatic labeling settings** with the v5 mobile preset to select Chinese & English, English, French, German, Korean, or Japanese.
   For specific model download links, please refer to [PaddleOCR Model List](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/docs/version3.x/model_list.md).
 
-- **Custom Model**: If users want to replace the built-in model with their own inference model, they can now do so directly via the command line:
+- **Custom Model**: Select local detection and recognition inference directories in the settings dialog, or pass explicit command-line arguments:
 
 ```bash
 python PPOCRLabel.py --det_model_dir {your_det_model_dir} --det_model_name {your_det_model_name} --rec_model_dir {your_rec_model_dir} --rec_model_name {your_rec_model_name}

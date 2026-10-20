@@ -237,11 +237,21 @@ PPOCRLabel.exe --lang ch
 
 ### 3.2 内置模型
 
+打开图片目录后，选择 **自动标注 → 自动标注设置**（Ctrl+M），可选择官方
+v5/v6 模型或本地 Paddle 推理目录。模型名称从 inference.yml 读取，v6
+需要兼容的 PaddleOCR、PaddleX 和 PaddlePaddle 运行环境。
+
+选择保存在当前目录的 ppocrlabel.json，新目录默认使用 v5 mobile。
+本次启动显式指定的命令行模型参数优先于目录配置。切换失败会保留原模型。
+
+批量自动标注跳过 **√ 已确认图片**。移动数据集时请同时保留 fileState.txt
+和 Label.txt；自动结果仍需人工检查、确认。
+
  - 默认模型：PPOCRLabel默认使用PaddleOCR中的中英文超轻量OCR模型，支持中英文与数字识别，多种语言检测。
 
- - 模型语言切换：用户可通过菜单栏中 "PaddleOCR" - "选择模型" 切换内置模型语言，目前支持的语言包括法文、德文、韩文、日文。具体模型下载链接可参考[PaddleOCR模型列表](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/docs/version3.x/model_list.md).
+ - 模型语言切换：通过 **自动标注 → 自动标注设置** 中的 v5 mobile 预设选择语言，支持中英文、英文、法文、德文、韩文和日文。具体模型下载链接可参考[PaddleOCR模型列表](https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.0/docs/version3.x/model_list.md).
 
- - **自定义模型**：如果用户想将内置模型更换为自己的推理模型，现在可以直接通过命令行参数指定：
+ - **自定义模型**：在设置窗口中选择本地检测、识别推理目录，也可以通过命令行参数指定：
 
  ```bash
  python PPOCRLabel.py --det_model_dir {your_det_model_dir} --det_model_name {your_det_model_name} --rec_model_dir {your_rec_model_dir} --rec_model_name {your_rec_model_name}
