@@ -40,7 +40,7 @@ class ModelLanguageTest(unittest.TestCase):
             for classNode in tree.body
             if isinstance(classNode, ast.ClassDef) and classNode.name == "MainWindow"
             for node in classNode.body
-            if isinstance(node, ast.FunctionDef) and node.name == "modelChoose"
+            if isinstance(node, ast.FunctionDef) and node.name == "setAutoLabelConfig"
         )
         self.assertTrue(
             any(

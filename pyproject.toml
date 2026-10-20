@@ -12,7 +12,8 @@ dependencies = [
   "tqdm",
   "premailer",
   "pandas",
-  "requests"
+  "requests",
+  "PyYAML"
 ]
 requires-python = ">= 3.9"
 authors = [
