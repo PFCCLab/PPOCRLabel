@@ -2820,6 +2820,12 @@ class MainWindow(QMainWindow):
     def saveFile(self, _value=False, mode="Manual"):
         # Manual mode is used for users click "Save" manually,which will change the state of the image
         if self.filePath:
+            # Skip saving if the file no longer exists (e.g. it has just
+            # been moved to trash by deleteImg), otherwise cv2.imdecode in
+            # _saveFile raises FileNotFoundError and crashes the app.
+            if not os.path.exists(self.filePath):
+                logger.warning("Skip saving: file no longer exists: %s", self.filePath)
+                return
             img_idx = self.getImglabelidx(self.filePath)
             self._saveFile(img_idx, mode=mode)
 
@@ -2914,6 +2920,11 @@ class MainWindow(QMainWindow):
                 self.saveFilestate()
                 self.savePPlabel(mode="Auto")
                 self.saveCacheLabel()
+                # Drop the reference to the deleted file before reloading the
+                # directory. Otherwise importDirImages -> mayContinue ->
+                # saveFile would try to re-read the removed image and crash.
+                self.filePath = None
+                self.dirty = False
                 self.importDirImages(self.lastOpenDir, isDelete=True)
 
     def deleteImgDialog(self):
