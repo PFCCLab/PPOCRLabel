@@ -292,20 +292,13 @@ class MainWindow(QMainWindow):
             model_dir=self.det_model_dir,
             device=self.gpu,
         )
-        self.table_ocr = PPStructureV3(
-            use_doc_orientation_classify=False,
-            use_doc_unwarping=False,
-            use_seal_recognition=False,
-            use_table_recognition=True,
-            use_formula_recognition=False,
-            use_chart_recognition=False,
-            use_region_detection=False,
-            device=self.gpu,
-        )
+        # Lazy init: the PP-StructureV3 table pipeline bundles ~14 models
+        # (~1.1 GB). Loading them eagerly adds minutes to startup even for
+        # pure text-annotation sessions. See _get_table_ocr().
+        self.table_ocr = None
 
         if os.path.exists("./data/paddle.png"):
             self.ocr.predict("./data/paddle.png")
-            self.table_ocr.predict("./data/paddle.png")
 
         # For loading all image under a directory
         self.mImgList = []
@@ -3334,6 +3327,33 @@ class MainWindow(QMainWindow):
             self.singleLabel(shape)
             self.setDirty()
 
+    def _get_table_ocr(self):
+        """Build the PP-StructureV3 pipeline on first use.
+
+        Loading it eagerly at startup costs ~1.1 GB of weights and several
+        minutes on machines where the table models are not cached yet, which
+        is wasteful for plain text-annotation workflows. Additionally, with
+        PaddleX >= 3.7 the HPI auto-tuner may pick the oneDNN backend for
+        table models, which crashes with
+        "NotImplementedError: ConvertPirAttribute2RuntimeAttribute not
+        support [pir::ArrayAttribute<pir::DoubleAttribute>]". Disabling HPI
+        and MKLDNN here avoids both issues.
+        """
+        if self.table_ocr is None:
+            self.table_ocr = PPStructureV3(
+                use_doc_orientation_classify=False,
+                use_doc_unwarping=False,
+                use_seal_recognition=False,
+                use_table_recognition=True,
+                use_formula_recognition=False,
+                use_chart_recognition=False,
+                use_region_detection=False,
+                device=self.gpu,
+                enable_mkldnn=False,
+                enable_hpi=False,
+            )
+        return self.table_ocr
+
     def TableRecognition(self):
         """
         Table Recognition
@@ -3344,7 +3364,7 @@ class MainWindow(QMainWindow):
 
         start = time.time()
         img = cv2.imdecode(np.fromfile(self.filePath, dtype=np.uint8), cv2.IMREAD_COLOR)
-        res = self.table_ocr.predict(img)[0]
+        res = self._get_table_ocr().predict(img)[0]
 
         table_rec_excel_dir = self.lastOpenDir + "/tableRec_excel_output/"
         os.makedirs(table_rec_excel_dir, exist_ok=True)
@@ -3699,18 +3719,9 @@ class MainWindow(QMainWindow):
                 self.ocr = selected_ocr
                 self.text_recognizer = selected_text_recognizer
             if choose_lang in ["ch", "en"]:
-                if hasattr(self, "table_ocr"):
-                    del self.table_ocr
-                self.table_ocr = PPStructureV3(
-                    use_doc_orientation_classify=False,
-                    use_doc_unwarping=False,
-                    use_seal_recognition=False,
-                    use_table_recognition=True,
-                    use_formula_recognition=False,
-                    use_chart_recognition=False,
-                    use_region_detection=False,
-                    device=self.gpu,
-                )
+                # Reset so the table pipeline is rebuilt lazily with the new
+                # language on first use (see _get_table_ocr()).
+                self.table_ocr = None
             self.model_lang = choose_lang
         else:
             logger.error("Invalid language selection")
