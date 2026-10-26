@@ -2693,7 +2693,7 @@ class MainWindow(QMainWindow):
                 flags=None,
             )
 
-    def importDirImages(self, dirpath, isDelete=False):
+    def importDirImages(self, dirpath, isDelete=False, deleteIdx=None):
         if not self.mayContinue() or not dirpath:
             return
         if self.defaultSaveDir and self.defaultSaveDir != dirpath:
@@ -2723,12 +2723,17 @@ class MainWindow(QMainWindow):
         imgListCurrIndex = None
         if self.filePath:
             imgListCurrIndex = self.mImgList.index(self.filePath)
+        elif isDelete and deleteIdx is not None:
+            # Deletion flow: index of the deleted image in the OLD list.
+            # After rescanning, the same index points at the image that
+            # followed the deleted one, so the browsing position is kept.
+            imgListCurrIndex = deleteIdx
 
         self.filePath = None
         self.fileListWidget.clear()
         self.mImgList = self.scanAllImages(dirpath)
         self.mImgList5 = self.mImgList[:5]
-        self.openNextImg(imgListCurrIndex=imgListCurrIndex)
+        self.openNextImg(imgListCurrIndex=imgListCurrIndex, preferUnlabeled=isDelete)
         doneicon = newIcon("done")
         closeicon = newIcon("close")
         for imgPath in self.mImgList:
@@ -2787,7 +2792,7 @@ class MainWindow(QMainWindow):
             if filename:
                 self.loadFile(filename)
 
-    def openNextImg(self, _value=False, imgListCurrIndex=None):
+    def openNextImg(self, _value=False, imgListCurrIndex=None, preferUnlabeled=False):
         if not self.mayContinue():
             return
 
@@ -2810,6 +2815,19 @@ class MainWindow(QMainWindow):
             else:
                 filename = self.mImgList[currIndex]
                 self.mImgList5 = self.indexTo5Files(currIndex)
+
+        # After a deletion, skip forward to the first image that has not
+        # been labeled yet. If every following image is already labeled,
+        # keep the default choice (the one right after / before).
+        if preferUnlabeled and filename is not None:
+            start = self.mImgList.index(filename)
+            for i in range(start, len(self.mImgList)):
+                candidate = self.mImgList[i]
+                if not self.validFilestate(candidate):
+                    filename = candidate
+                    self.mImgList5 = self.indexTo5Files(i)
+                    break
+
         if filename:
             logger.debug("file name in openNext is %s", filename)
             self.loadFile(filename)
@@ -2914,6 +2932,12 @@ class MainWindow(QMainWindow):
                     )
                     return
 
+                # Remember the position of the deleted image so the app can
+                # jump to the next unlabeled image afterwards.
+                deleteIdx = None
+                if deletePath in self.mImgList:
+                    deleteIdx = self.mImgList.index(deletePath)
+
                 self.fileStatedict.pop(imgidx, None)
                 self.PPlabel.pop(imgidx, None)
                 self.Cachelabel.pop(imgidx, None)
@@ -2925,7 +2949,9 @@ class MainWindow(QMainWindow):
                 # saveFile would try to re-read the removed image and crash.
                 self.filePath = None
                 self.dirty = False
-                self.importDirImages(self.lastOpenDir, isDelete=True)
+                self.importDirImages(
+                    self.lastOpenDir, isDelete=True, deleteIdx=deleteIdx
+                )
 
     def deleteImgDialog(self):
         yes, cancel = QMessageBox.Yes, QMessageBox.Cancel
