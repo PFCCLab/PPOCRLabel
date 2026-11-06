@@ -1,0 +1,18 @@
+# Core runtime dependencies for PPOCRLabel
+pyqt5
+paddleocr>=3.0.2
+paddlepaddle
+opencv-python
+numpy
+Pillow
+openpyxl
+pandas
+premailer
+requests
+tqdm
+
+# Windows-only dependency used for recycle bin support
+pywin32; sys_platform == "win32"
+
+# Linux-only dependency used for recycle bin support
+trash-cli; sys_platform == "linux"

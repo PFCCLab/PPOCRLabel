@@ -66,12 +66,17 @@ def newAction(
             a.setIcon(newIcon(icon, iconSize))
         else:
             a.setIcon(newIcon(icon))
+    shortcutText = None
     if shortcut is not None:
         if isinstance(shortcut, (list, tuple)):
             a.setShortcuts(shortcut)
+            shortcutText = ", ".join(shortcut)
         else:
             a.setShortcut(shortcut)
+            shortcutText = shortcut
     if tip is not None:
+        if shortcutText:
+            tip = "%s (Shortcut: %s)" % (tip, shortcutText)
         a.setToolTip(tip)
         a.setStatusTip(tip)
     if slot is not None:
@@ -319,6 +324,10 @@ def keysInfo(lang="en"):
             "Q 或 Home\t\t\t新建四点框\n"
             "Ctrl + E\t\t编辑所选框标签\n"
             "Ctrl + G\t\t聚焦缩放至所选框\n"
+            "Tab\t\t\t切换到下一个标记框\n"
+            "Shift + Tab\t\t切换到上一个标记框\n"
+            "F2 或 Enter\t\t编辑当前标记框文本\n"
+            "Esc\t\t\t确认编辑并返回导航\n"
             "Ctrl + R\t\t重新识别所选标记\n"
             "Ctrl + C\t\t复制并粘贴选中的标记框\n"
             "Ctrl + B\t\t重新排序坐标框位置\n"
@@ -348,6 +357,10 @@ def keysInfo(lang="en"):
             "Q or Home\t\t\tCreate a four-points box\n"
             "Ctrl + E\t\tEdit label of the selected box\n"
             "Ctrl + G\t\tFocus and zoom into the selected box\n"
+            "Tab\t\t\tNext detection box\n"
+            "Shift + Tab\t\tPrevious detection box\n"
+            "F2 or Enter\t\tEdit the focused box text\n"
+            "Esc\t\t\tConfirm edit and return to navigation\n"
             "Ctrl + R\t\tRe-recognize the selected box\n"
             "Ctrl + C\t\tCopy and paste the selected\n"
             "Ctrl + B\t\tResort the position of bounding boxes\n"
