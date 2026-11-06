@@ -301,6 +301,7 @@ class MainWindow(QMainWindow):
             use_chart_recognition=False,
             use_region_detection=False,
             device=self.gpu,
+            enable_mkldnn=False,
         )
 
         if os.path.exists("./data/paddle.png"):
@@ -460,6 +461,13 @@ class MainWindow(QMainWindow):
         labelListContainer.setLayout(listLayout)
         self.labelList.itemSelectionChanged.connect(self.labelSelectionChanged)
         self.labelList.clicked.connect(self.labelList.item_clicked)
+        self.labelList.navigateRequested.connect(self.navigateShapes)
+        self.labelList.editRequested.connect(self.editCurrentLabelInline)
+        self.labelList.setToolTip(
+            "Tab / Shift+Tab: next / previous box\n"
+            "F2 or Enter: edit the selected box\n"
+            "Esc: confirm the edit"
+        )
 
         # Connect to itemChanged to detect checkbox changes.
         self.labelList.itemChanged.connect(self.labelItemChanged)
@@ -467,6 +475,29 @@ class MainWindow(QMainWindow):
         self.labelListDock = QDockWidget(self.labelListDockName, self)
         self.labelListDock.setWidget(self.labelList)
         self.labelListDock.setFeatures(QDockWidget.NoDockWidgetFeatures)
+
+        self.shortcutInfoButton = QToolButton()
+        self.shortcutInfoButton.setText("i")
+        self.shortcutInfoButton.setAutoRaise(True)
+        self.shortcutInfoButton.setCursor(Qt.PointingHandCursor)
+        self.shortcutInfoButton.setFixedSize(18, 18)
+        self.shortcutInfoButton.setStyleSheet(
+            "QToolButton { border: 1px solid palette(mid); border-radius: 9px;"
+            " font-weight: bold; }"
+            "QToolButton:hover { background-color: palette(highlight);"
+            " color: palette(highlighted-text); }"
+        )
+        self.shortcutInfoButton.setToolTip(self.shortcutTooltip())
+        self.shortcutInfoButton.clicked.connect(self.showKeysDialog)
+
+        titleBar = QWidget()
+        titleLayout = QHBoxLayout(titleBar)
+        titleLayout.setContentsMargins(6, 2, 6, 2)
+        titleLayout.addWidget(QLabel(self.labelListDockName))
+        titleLayout.addWidget(self.shortcutInfoButton)
+        titleLayout.addStretch()
+        self.labelListDock.setTitleBarWidget(titleBar)
+
         labelIndexListlBox.addWidget(
             self.labelListDock, 10
         )  # label list is wider than index list
@@ -608,6 +639,13 @@ class MainWindow(QMainWindow):
         self.canvas.shapeMoved.connect(self.updateBoxlist)  # self.setDirty
         self.canvas.selectionChanged.connect(self.shapeSelectionChanged)
         self.canvas.drawingPolygon.connect(self.toggleDrawingSensitive)
+        self.canvas.navigationRequested.connect(self.navigateShapes)
+        self.canvas.editRequested.connect(self.editCurrentLabelInline)
+        self.canvas.setToolTip(
+            "Tab / Shift+Tab: next / previous box\n"
+            "F2 or Enter: edit the selected box\n"
+            "Esc: confirm the edit"
+        )
 
         centerLayout = QVBoxLayout()
         centerLayout.setContentsMargins(0, 0, 0, 0)
@@ -1291,7 +1329,10 @@ class MainWindow(QMainWindow):
         # Custom context menu for the canvas widget:
         addActions(self.canvas.menus[0], self.actions.beginnerContext)
 
-        self.statusBar().showMessage("%s started." % __appname__)
+        self.statusBar().showMessage(
+            "%s started. Tip: Tab / Shift+Tab switches boxes, "
+            "F2 or Enter edits, Esc confirms." % __appname__
+        )
         self.statusBar().show()
 
         # Application state.
@@ -1457,6 +1498,31 @@ class MainWindow(QMainWindow):
             return items[0]
         return None
 
+    def navigateShapes(self, step):
+        """Move the selection to the next/previous detection box."""
+        count = self.labelList.count()
+        if count == 0:
+            return
+        items = self.labelList.selectedItems()
+        row = self.labelList.row(items[0]) if items else -1
+        if row < 0:
+            row = 0 if step > 0 else count - 1
+        else:
+            row = (row + step) % count
+        self.labelList.setCurrentRow(row)
+        item = self.labelList.item(row)
+        if item is not None:
+            self.labelList.scrollToItem(item, QAbstractItemView.PositionAtCenter)
+        self.labelList.setFocus()
+
+    def editCurrentLabelInline(self):
+        """Open the inline editor for the currently selected detection box."""
+        if not self.canvas.editing() or self.labelList.count() == 0:
+            return
+        if not self.labelList.selectedItems():
+            self.labelList.setCurrentRow(0)
+        self.labelList.open_editor()
+
     def addRecentFile(self, filePath):
         if filePath in self.recentFiles:
             self.recentFiles.remove(filePath)
@@ -1500,6 +1566,22 @@ class MainWindow(QMainWindow):
     def showKeysDialog(self):
         msg = keysInfo(self.lang)
         QMessageBox.information(self, "Information", msg)
+
+    def shortcutTooltip(self):
+        return (
+            "Keyboard shortcuts\n"
+            "Tab / Shift+Tab: next / previous box\n"
+            "F2 or Enter: edit the selected box\n"
+            "Esc: confirm the edit and return to navigation\n"
+            "W: create rectangle box\n"
+            "Q or Home: create four-point box\n"
+            "Ctrl+E: edit label\n"
+            "Ctrl+R: re-recognize selected box\n"
+            "Ctrl+Shift+R: re-recognize all boxes\n"
+            "A / D: previous / next image\n"
+            "Delete / Backspace: delete selected box\n"
+            "Click for the full shortcut list"
+        )
 
     def applyFontSize(self, fontSize):
         # 1. Update standard font objects
@@ -3161,6 +3243,8 @@ class MainWindow(QMainWindow):
 
         self.autoDialog = AutoDialog(
             parent=self,
+            text=self.stringBundle.getString("autoRecognitionNotice"),
+            title=self.stringBundle.getString("autoRecognition"),
             ocr=self.ocr,
             image_list=uncheckedList,
             len_bar=len(uncheckedList),
@@ -3710,6 +3794,7 @@ class MainWindow(QMainWindow):
                     use_chart_recognition=False,
                     use_region_detection=False,
                     device=self.gpu,
+                    enable_mkldnn=False,
                 )
             self.model_lang = choose_lang
         else:

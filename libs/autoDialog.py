@@ -9,6 +9,7 @@ from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtWidgets import (
     QDialog,
     QDialogButtonBox as BB,
+    QLabel,
     QProgressBar,
     QVBoxLayout,
     QListWidget,
@@ -18,10 +19,15 @@ from libs.utils import newIcon
 
 logger = logging.getLogger("PPOCRLabel")
 
+# Keep references to workers that are still running so that the QThread object is
+# not garbage collected if the dialog is closed before inference finishes.
+_running_workers = set()
+
 
 class Worker(QThread):
     progressBarValue = pyqtSignal(int)
     listValue = pyqtSignal(str)
+    resultReady = pyqtSignal(str, object)
     end_signal = pyqtSignal(int, str)
     handle = 0
 
@@ -38,79 +44,73 @@ class Worker(QThread):
         try:
             findex = 0
             for img_path in self.img_list:
-                if self.handle == 0:
-                    self.listValue.emit(img_path)
-                    if self.model == "paddle":
-                        img = cv2.imdecode(
-                            np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_COLOR
+                if self.handle != 0 or self.isInterruptionRequested():
+                    break
+                self.listValue.emit(img_path)
+                self.result_dic = None
+                if self.model == "paddle":
+                    img = cv2.imdecode(
+                        np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_COLOR
+                    )
+                    if img is None:
+                        logger.warning(
+                            "Failed to decode image file %s. The file may be corrupted or in an unsupported format.",
+                            img_path,
                         )
-                        if img is None:
+                        self.result_dic = None
+                    else:
+                        h, w, _ = img.shape
+                        if h > 32 and w > 32:
+                            result = self.ocr.predict(img)[0]
+                            self.result_dic = []
+                            for poly, text, score in zip(
+                                result["rec_polys"],
+                                result["rec_texts"],
+                                result["rec_scores"],
+                            ):
+                                # Convert numpy array to list for JSON serialization
+                                poly_list = (
+                                    poly.tolist() if hasattr(poly, "tolist") else poly
+                                )
+                                self.result_dic.append([poly_list, (text, score)])
+                        else:
                             logger.warning(
-                                "Failed to decode image file %s. The file may be corrupted or in an unsupported format.",
+                                "The size of %s is too small to be recognised",
                                 img_path,
                             )
-                            self.result_dic = None
-                        else:
-                            h, w, _ = img.shape
-                            if h > 32 and w > 32:
-                                result = self.ocr.predict(img)[0]
-                                self.result_dic = []
-                                for poly, text, score in zip(
-                                    result["rec_polys"],
-                                    result["rec_texts"],
-                                    result["rec_scores"],
-                                ):
-                                    # Convert numpy array to list for JSON serialization
-                                    poly_list = (
-                                        poly.tolist()
-                                        if hasattr(poly, "tolist")
-                                        else poly
-                                    )
-                                    self.result_dic.append([poly_list, (text, score)])
-                            else:
-                                logger.warning(
-                                    "The size of %s is too small to be recognised",
-                                    img_path,
-                                )
-                                self.result_dic = []  # Clear it instead of None
+                            self.result_dic = []  # Clear it instead of None
 
-                    # 结果保存
-                    if not self.result_dic:
-                        logger.warning("No text detected in file %s", img_path)
-                    else:
-                        strs = ""
-                        for res in self.result_dic:
-                            chars = res[1][0]
-                            cond = res[1][1]
-                            posi = res[0]
-                            strs += (
-                                "Transcription: "
-                                + chars
-                                + " Probability: "
-                                + str(cond)
-                                + " Location: "
-                                + json.dumps(posi)
-                                + "\n"
-                            )
-
-                        self.listValue.emit(strs)
-                        self.mainThread.result_dic = self.result_dic
-                        self.mainThread.filePath = img_path
-                        self.mainThread.saveFile(mode="Auto")
-                        # CRITICAL: Clear the result_dic after saving to prevent it from
-                        # leaking into the next image or back into the main UI
-                        self.mainThread.result_dic = []
-                        self.result_dic = []
-
-                    findex += 1
-                    self.progressBarValue.emit(findex)
+                # 结果保存
+                if not self.result_dic:
+                    logger.warning("No text detected in file %s", img_path)
                 else:
-                    break
+                    strs = ""
+                    for res in self.result_dic:
+                        chars = res[1][0]
+                        cond = res[1][1]
+                        posi = res[0]
+                        strs += (
+                            "Transcription: "
+                            + chars
+                            + " Probability: "
+                            + str(cond)
+                            + " Location: "
+                            + json.dumps(posi)
+                            + "\n"
+                        )
+
+                    self.listValue.emit(strs)
+                    # Let the GUI thread update the main window and save the file.
+                    # Touching widgets from this worker thread can deadlock Qt.
+                    self.resultReady.emit(img_path, self.result_dic)
+                    self.result_dic = None
+
+                findex += 1
+                self.progressBarValue.emit(findex)
             self.end_signal.emit(0, "readAll")
-            self.exec()
         except Exception as e:
-            logger.error("Error in worker thread: %s", e)
-            raise
+            logger.exception("Error in worker thread: %s", e)
+            self.end_signal.emit(-1, "error")
 
 
 class AutoDialog(QDialog):
@@ -121,6 +121,7 @@ class AutoDialog(QDialog):
         ocr=None,
         image_list=None,
         len_bar=0,
+        title=None,
     ):
         super(AutoDialog, self).__init__(parent)
         self.setFixedWidth(1000)
@@ -128,11 +129,18 @@ class AutoDialog(QDialog):
         self.ocr = ocr
         self.img_list = image_list
         self.len_bar = len_bar
+        self._cancelled = False
+        if title:
+            self.setWindowTitle("PPOCRLabel  --  " + title)
         self.pb = QProgressBar(parent)
         self.pb.setRange(0, self.len_bar)
         self.pb.setValue(0)
 
         layout = QVBoxLayout()
+        if text:
+            self.infoLabel = QLabel(text, self)
+            self.infoLabel.setWordWrap(True)
+            layout.addWidget(self.infoLabel)
         layout.addWidget(self.pb)
         self.model = "paddle"
         self.listWidget = QListWidget(self)
@@ -155,8 +163,25 @@ class AutoDialog(QDialog):
         self.thread_1 = Worker(self.ocr, self.img_list, self.parent, "paddle")
         self.thread_1.progressBarValue.connect(self.handleProgressBarSingal)
         self.thread_1.listValue.connect(self.handleListWidgetSingal)
+        self.thread_1.resultReady.connect(self.handleResultSignal)
         self.thread_1.end_signal.connect(self.handleEndsignalSignal)
         self.time_start = time.time()  # save start time
+
+    def handleResultSignal(self, img_path, result_dic):
+        # This runs in the GUI thread (queued connection), so it is safe to
+        # update the main window and save labels here.
+        if self._cancelled:
+            return
+        try:
+            self.parent.result_dic = result_dic
+            self.parent.filePath = img_path
+            self.parent.saveFile(mode="Auto")
+        except Exception:
+            logger.exception(
+                "Failed to save auto recognition result for %s", img_path
+            )
+        finally:
+            self.parent.result_dic = []
 
     def handleProgressBarSingal(self, i):
         self.pb.setValue(i)
@@ -177,17 +202,19 @@ class AutoDialog(QDialog):
         titem = self.listWidget.item(self.listWidget.count() - 1)
         self.listWidget.scrollToItem(titem)
 
-    def handleEndsignalSignal(self, i, str):
-        if i == 0 and str == "readAll":
+    def handleEndsignalSignal(self, i, signal_str):
+        if i == 0 and signal_str == "readAll":
             self.buttonBox.button(BB.Ok).setEnabled(True)
             self.buttonBox.button(BB.Cancel).setEnabled(False)
 
     def reject(self):
         logger.debug("Auto recognition dialog rejected")
+        self._cancelled = True
         self.thread_1.handle = -1
+        self.thread_1.requestInterruption()
         self.thread_1.quit()
-        while not self.thread_1.isFinished():
-            pass
+        # Do not busy-wait here: blocking the GUI thread while inference is
+        # still running is what makes the window appear "Not Responding".
         self.accept()
 
     def validate(self):
@@ -201,6 +228,10 @@ class AutoDialog(QDialog):
             logger.debug("Auto dialog text: %s", self.edit.text())
 
     def popUp(self):
+        _running_workers.add(self.thread_1)
+        self.thread_1.finished.connect(
+            lambda worker=self.thread_1: _running_workers.discard(worker)
+        )
         self.thread_1.start()
         return 1 if self.exec_() else None
 

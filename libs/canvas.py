@@ -38,6 +38,8 @@ class Canvas(QWidget):
     selectionChanged = pyqtSignal(list)
     shapeMoved = pyqtSignal()
     drawingPolygon = pyqtSignal(bool)
+    navigationRequested = pyqtSignal(int)
+    editRequested = pyqtSignal()
 
     CREATE, EDIT = list(range(2))
     _fill_drawing = False  # draw shadows
@@ -759,8 +761,31 @@ class Canvas(QWidget):
             h_delta and self.scrollRequest.emit(h_delta, Qt.Horizontal)
         ev.accept()
 
+    def focusNextPrevChild(self, next):
+        # Keep Tab/Shift+Tab inside the canvas so they can cycle through boxes.
+        if self.shapes:
+            return False
+        return super(Canvas, self).focusNextPrevChild(next)
+
     def keyPressEvent(self, ev):
         key = ev.key()
+        if key in (Qt.Key_Tab, Qt.Key_Backtab):
+            step = (
+                -1
+                if key == Qt.Key_Backtab or ev.modifiers() & Qt.ShiftModifier
+                else 1
+            )
+            self.navigationRequested.emit(step)
+            ev.accept()
+            return
+        if key == Qt.Key_F2 or (
+            key in (Qt.Key_Return, Qt.Key_Enter)
+            and not self.current
+            and not self.canCloseShape()
+        ):
+            self.editRequested.emit()
+            ev.accept()
+            return
         shapesBackup = copy.deepcopy(self.shapes)
         if len(shapesBackup) == 0:
             return
